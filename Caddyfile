@@ -1,0 +1,24 @@
+# PST Viewer — example Caddy config.
+# Replace the domain below, then point `root` at the folder of static files.
+#
+#   Run standalone (from the deploy folder):   caddy run
+#   Or add this block to your main Caddyfile and:   caddy reload
+
+pst.example.com {
+	# Folder of built static files. Use an absolute path when adding this
+	# block to a shared/system Caddyfile, e.g. root * /srv/pst-viewer/site
+	root * ./site
+
+	encode zstd gzip
+	file_server
+
+	# Serve the app for any path (harmless; the app has no server routes).
+	try_files {path} /index.html
+
+	# --- Optional: restrict to colleagues with a password ---
+	# Generate a hash with:  caddy hash-password
+	# (On Caddy < 2.8 the directive is `basicauth` instead of `basic_auth`.)
+	# basic_auth {
+	#	someuser  $2a$14$REPLACE_WITH_A_BCRYPT_HASH
+	# }
+}
