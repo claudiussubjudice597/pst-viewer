@@ -4,6 +4,15 @@ A fast, private, **fully in-browser** viewer for Outlook **`.pst` / `.ost`** mai
 
 Installable as an offline app (PWA): load the site once and it keeps working with no internet.
 
+## Screenshots
+
+| | |
+| --- | --- |
+| ![Read email 1:1 with attachments](screenshots/mailbox.png) | ![Search across all mailboxes](screenshots/search.png) |
+| ![Preview attachments inline](screenshots/preview.png) | ![Open any mailbox](screenshots/landing.png) |
+
+*(Sample data shown is fictional.)*
+
 ## Features
 
 - **Open** `.pst`, `.ost`, and `.zip` files (zips are scanned automatically for mailboxes, including nested ones), by drag-and-drop or browse.
