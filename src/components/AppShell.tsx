@@ -98,7 +98,7 @@ function EmptyState() {
   return (
     <div className="relative h-full">
       <div className="absolute left-4 top-3 z-10 flex items-center gap-2.5">
-        <img src="/icon.svg" alt="" className="h-7 w-7" />
+        <img src={`${import.meta.env.BASE_URL}icon.svg`} alt="" className="h-7 w-7" />
         <div className="leading-tight">
           <div className="text-sm font-semibold text-slate-100">PST Viewer</div>
           <div className="text-[11px] text-slate-500">Local · Offline · Private</div>

@@ -10,7 +10,7 @@ export function NavPane() {
   return (
     <nav className="flex h-full min-h-0 flex-col border-r border-slate-800 bg-slate-900/40">
       <div className="flex h-14 shrink-0 items-center gap-2.5 border-b border-slate-800 px-3">
-        <img src="/icon.svg" alt="" className="h-7 w-7" />
+        <img src={`${import.meta.env.BASE_URL}icon.svg`} alt="" className="h-7 w-7" />
         <div className="leading-tight">
           <div className="text-sm font-semibold text-slate-100">PST Viewer</div>
           <div className="text-[11px] text-slate-500">Local · Offline · Private</div>
