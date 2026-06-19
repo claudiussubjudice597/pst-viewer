@@ -191,7 +191,7 @@ function HighlightedText({ text, terms }: { text: string; terms: string[] }) {
       <mark
         key={i++}
         ref={isFirst ? firstRef : undefined}
-        className={`rounded-sm text-slate-900 ${isFirst ? 'bg-amber-400' : 'bg-yellow-300'}`}
+        className="rounded-sm bg-yellow-400 text-slate-900"
       >
         {m[0]}
       </mark>,

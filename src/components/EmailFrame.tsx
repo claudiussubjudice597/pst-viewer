@@ -11,9 +11,8 @@ img{max-width:100%;height:auto}
 a{color:#0b57d0}
 table{max-width:100%}
 blockquote{border-left:3px solid #ddd;margin:0 0 0 8px;padding-left:12px;color:#555}
-mark.pstv-hit{background:#fde047;color:#111;border-radius:2px}
-mark.pstv-hit.pstv-current{background:#f59e0b;box-shadow:0 0 0 2px #f59e0b}
-img.pstv-img-hit{outline:3px solid #f59e0b;outline-offset:2px;border-radius:3px}
+mark.pstv-hit{background:#facc15;color:#111;border-radius:2px}
+img.pstv-img-hit{border:3px solid #facc15 !important;border-radius:3px}
 html{scrollbar-width:auto;scrollbar-color:#94a3b8 #e2e8f0}
 ::-webkit-scrollbar{width:14px;height:14px}
 ::-webkit-scrollbar-track{background:#e2e8f0}
@@ -160,7 +159,6 @@ export function EmailFrame({
       if (!doc || !doc.body) return
       clearHighlights(doc)
       const textCount = terms.length ? applyHighlights(doc, terms) : 0
-      if (textCount > 0) doc.querySelector('mark.pstv-hit')?.classList.add('pstv-current')
       const imgCount = applyImageHighlights(doc, highlightImageUrls)
       // Auto-scroll to the first hit once per opened message (matches can be a
       // text mark or an outlined image, and OCR matches can resolve after load).

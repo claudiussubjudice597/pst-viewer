@@ -72,7 +72,7 @@ function Chip({
       onClick={onClick}
       className={`group flex max-w-[18rem] items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left transition ${
         matched
-          ? 'border-amber-400/70 bg-amber-400/10 ring-2 ring-amber-400/60 hover:bg-amber-400/15'
+          ? 'border-yellow-400/70 bg-yellow-400/10 ring-2 ring-yellow-400/60 hover:bg-yellow-400/15'
           : 'border-slate-700 bg-slate-800/60 hover:border-slate-600 hover:bg-slate-700/60'
       }`}
       data-tip={matched ? `${meta.name} (contains your search text)` : meta.name}
@@ -94,7 +94,7 @@ function Chip({
           <span className="block text-[11px] text-slate-400">{formatBytes(meta.size)}</span>
         )}
       </span>
-      {matched && <Search className="ml-0.5 h-3.5 w-3.5 shrink-0 text-amber-300" />}
+      {matched && <Search className="ml-0.5 h-3.5 w-3.5 shrink-0 text-yellow-300" />}
     </button>
   )
 }
