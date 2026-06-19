@@ -5,6 +5,9 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // Node global (vite.config runs in Node); declared locally to avoid @types/node.
 declare const process: { env: Record<string, string | undefined> }
+// `self` is referenced only inside the service-worker route below, which Workbox
+// serializes into the generated SW; declared so this Node-context file type-checks.
+declare const self: { location: { origin: string } }
 
 // Default '/' (root domains, Caddy, Nginx, Netlify, etc.). GitHub Pages project
 // sites are served from a subpath, so the CI build sets BASE_PATH=/pst-viewer/.
@@ -40,6 +43,27 @@ export default defineConfig({
         globPatterns: ['**/*.{js,mjs,css,html,svg,png,wasm,gz,woff,woff2}'],
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
         cleanupOutdatedCaches: true,
+        runtimeCaching: [
+          {
+            // Cache remote email images locally, the way an email client proxies
+            // them. The service worker can store cross-origin ("opaque")
+            // responses, so each remote image loads once then is served from the
+            // cache forever after: it stops them disappearing / being throttled,
+            // and a shared image used by many emails is fetched only once.
+            urlPattern: ({ url, request }) =>
+              request.destination === 'image' && url.origin !== self.location.origin,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'remote-email-images',
+              expiration: {
+                maxEntries: 300,
+                maxAgeSeconds: 60 * 60 * 24 * 30,
+                purgeOnQuotaError: true,
+              },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
       },
     }),
   ],
