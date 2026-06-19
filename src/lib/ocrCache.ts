@@ -1,21 +1,28 @@
 /**
  * Persistent cache of OCR results, so an image is read only once: re-opening a
- * mailbox (or the same image shared across many emails, or across mailboxes)
- * reuses the stored text instead of running OCR again.
+ * mailbox (or the same image shared across many emails or mailboxes) reuses the
+ * stored text instead of running OCR again.
  *
- * Only the recognized TEXT is stored, keyed by a SHA-256 of the image bytes
- * (a stable, content-addressed key). Images and sharpened canvases are never
- * stored, so the cache stays tiny (a few KB of text per image at most). It
- * lives in IndexedDB on the user's device and is never uploaded; clear it any
- * time with `clearOcrCache()`.
+ * Only the recognized TEXT is stored, keyed by a SHA-256 of the image bytes (a
+ * stable, content-addressed key). Images and sharpened canvases are never
+ * stored, so the cache stays tiny. Entries expire 7 days after they are written
+ * and are dropped on the next open, so it never grows without bound.
  *
- * Every operation degrades gracefully to "no cache" (IndexedDB or WebCrypto
- * unavailable, private-mode quota errors, etc.), so OCR still works without it.
+ * Lives in IndexedDB on the user's device and is never uploaded. Every operation
+ * degrades gracefully to "no cache" (IndexedDB or WebCrypto unavailable,
+ * private-mode quota errors, etc.), so OCR still works without it.
  */
 
 const DB_NAME = 'pstv-ocr-cache'
 const STORE = 'text'
 const DB_VERSION = 1
+const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000 // expire cached text after 7 days
+
+/** Stored value: recognized text plus the time it stops being valid. */
+interface Entry {
+  text: string
+  exp: number
+}
 
 let dbPromise: Promise<IDBDatabase | null> | null = null
 
@@ -29,13 +36,33 @@ function openDb(): Promise<IDBDatabase | null> {
         const db = req.result
         if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE)
       }
-      req.onsuccess = () => resolve(req.result)
+      req.onsuccess = () => {
+        purgeExpired(req.result)
+        resolve(req.result)
+      }
       req.onerror = () => resolve(null)
     } catch {
       resolve(null)
     }
   })
   return dbPromise
+}
+
+/** Drop entries past their 7-day expiry (and any in an older format). Best-effort. */
+function purgeExpired(db: IDBDatabase): void {
+  try {
+    const now = Date.now()
+    const req = db.transaction(STORE, 'readwrite').objectStore(STORE).openCursor()
+    req.onsuccess = () => {
+      const cursor = req.result
+      if (!cursor) return
+      const v = cursor.value as Entry | undefined
+      if (!v || typeof v.exp !== 'number' || v.exp < now) cursor.delete()
+      cursor.continue()
+    }
+  } catch {
+    /* ignore */
+  }
 }
 
 /** SHA-256 hex of the image bytes; a stable content key, or null if unavailable. */
@@ -54,8 +81,8 @@ export async function hashImageBytes(bytes: ArrayBuffer): Promise<string | null>
 
 /**
  * Cached OCR text for a content hash. Returns `undefined` when the image has
- * never been read; an empty string means "read, contained no text" (so we do
- * not OCR it again).
+ * never been read or its cached text has expired; an empty string means "read,
+ * contained no text" (so we do not OCR it again).
  */
 export async function getCachedOcr(hash: string): Promise<string | undefined> {
   const db = await openDb()
@@ -63,7 +90,14 @@ export async function getCachedOcr(hash: string): Promise<string | undefined> {
   return new Promise((resolve) => {
     try {
       const req = db.transaction(STORE, 'readonly').objectStore(STORE).get(hash)
-      req.onsuccess = () => resolve(typeof req.result === 'string' ? req.result : undefined)
+      req.onsuccess = () => {
+        const v = req.result as Entry | undefined
+        if (v && typeof v.text === 'string' && typeof v.exp === 'number' && v.exp >= Date.now()) {
+          resolve(v.text)
+        } else {
+          resolve(undefined)
+        }
+      }
       req.onerror = () => resolve(undefined)
     } catch {
       resolve(undefined)
@@ -71,31 +105,15 @@ export async function getCachedOcr(hash: string): Promise<string | undefined> {
   })
 }
 
-/** Store OCR text (possibly empty) for a content hash. Best-effort. */
+/** Store OCR text (possibly empty) for a content hash, valid for 7 days. Best-effort. */
 export async function putCachedOcr(hash: string, text: string): Promise<void> {
   const db = await openDb()
   if (!db) return
   return new Promise((resolve) => {
     try {
+      const entry: Entry = { text, exp: Date.now() + MAX_AGE_MS }
       const tx = db.transaction(STORE, 'readwrite')
-      tx.objectStore(STORE).put(text, hash)
-      tx.oncomplete = () => resolve()
-      tx.onerror = () => resolve()
-      tx.onabort = () => resolve()
-    } catch {
-      resolve()
-    }
-  })
-}
-
-/** Delete every cached OCR result. Best-effort. */
-export async function clearOcrCache(): Promise<void> {
-  const db = await openDb()
-  if (!db) return
-  return new Promise((resolve) => {
-    try {
-      const tx = db.transaction(STORE, 'readwrite')
-      tx.objectStore(STORE).clear()
+      tx.objectStore(STORE).put(entry, hash)
       tx.oncomplete = () => resolve()
       tx.onerror = () => resolve()
       tx.onabort = () => resolve()

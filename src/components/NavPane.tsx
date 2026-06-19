@@ -2,7 +2,6 @@ import { useRef, useState } from 'react'
 import { useApp, type Source } from '../store/store'
 import type { FolderNode } from '../types'
 import { ACCEPT_ATTR, filterAccepted } from '../lib/files'
-import { clearOcrCache } from '../lib/ocrCache'
 import { Alert, Caret, FolderIcon, Pencil, Plus, Spinner, Trash } from './icons'
 
 export function NavPane() {
@@ -40,23 +39,8 @@ export function NavPane() {
 function NavAddFiles() {
   const addFiles = useApp((s) => s.addFiles)
   const input = useRef<HTMLInputElement>(null)
-  const [cleared, setCleared] = useState(false)
-
-  const clearCache = async () => {
-    if (
-      !window.confirm(
-        'Clear cached image text? Text read from images is re-read in the background next time you open a mailbox.',
-      )
-    ) {
-      return
-    }
-    await clearOcrCache()
-    setCleared(true)
-    window.setTimeout(() => setCleared(false), 2000)
-  }
-
   return (
-    <div className="shrink-0 space-y-1.5 border-t border-slate-800 p-2">
+    <div className="shrink-0 border-t border-slate-800 p-2">
       <button
         onClick={() => input.current?.click()}
         className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800/60 px-3 py-2 text-sm font-medium text-slate-200 transition hover:bg-slate-700/60"
@@ -76,13 +60,6 @@ function NavAddFiles() {
           e.target.value = ''
         }}
       />
-      <button
-        onClick={clearCache}
-        className="w-full py-0.5 text-center text-[11px] text-slate-500 transition hover:text-slate-300"
-        data-tip="Delete the text this app cached from images on this device"
-      >
-        {cleared ? 'Image-text cache cleared' : 'Clear image-text cache'}
-      </button>
     </div>
   )
 }
