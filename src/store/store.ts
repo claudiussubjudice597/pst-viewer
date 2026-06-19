@@ -3,6 +3,7 @@ import * as Comlink from 'comlink'
 import { pst } from '../worker/client'
 import { scanZipForPsts } from '../lib/zip'
 import { buildPrintDocument, printHtmlDocument } from '../lib/printExport'
+import { getCachedOcr, putCachedOcr, hashImageBytes } from '../lib/ocrCache'
 import type { Worker as OcrWorker } from 'tesseract.js'
 import type { FolderNode, MessageContent, MessageMeta, OcrTarget, SearchHit, SourceIndex } from '../types'
 
@@ -297,8 +298,15 @@ export const useApp = create<AppState>((set, get) => {
                 ? await pst.getBodyImageData(sourceId, t.messageId, t.ref)
                 : await pst.getAttachmentData(sourceId, t.messageId, t.ref)
             if (data) {
-              const blob = new Blob([data.data], { type: data.mime || 'image/png' })
-              const text = await lib.recognizeImage(worker, blob)
+              // Reuse cached text (keyed by image content) so a re-opened
+              // mailbox, or an image shared across emails, is read only once.
+              const hash = await hashImageBytes(data.data)
+              let text = hash ? await getCachedOcr(hash) : undefined
+              if (text === undefined) {
+                const blob = new Blob([data.data], { type: data.mime || 'image/png' })
+                text = await lib.recognizeImage(worker, blob)
+                if (hash) await putCachedOcr(hash, text)
+              }
               if (text) await pst.addOcrText(sourceId, t.messageId, t.kind, t.ref, text)
             }
           } catch {
