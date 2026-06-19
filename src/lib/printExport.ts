@@ -69,12 +69,17 @@ export function buildPrintDocument(contents: MessageContent[]): string {
   const sections = contents.map(section).join('\n')
   // Empty <title> + `@page { margin: 0 }` make the browser omit its own
   // date/title/URL headers & footers; page margins come from .email padding.
+  // `size: A4` pins pagination so it does not depend on the device's default
+  // paper size (Chrome OS can differ from Windows and spill a sliver onto an
+  // extra page). The `!important` html/body reset wins over any sizing rules
+  // that leak in from an individual email's own CSS (some set body{height:100%}),
+  // which would otherwise force a full-height body and a blank trailing page.
   return `<!doctype html><html><head><meta charset="utf-8"><title></title>
 <style>
-  @page { margin: 0; }
-  html, body { margin: 0; }
+  @page { size: A4; margin: 0; }
+  html, body { height: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; }
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: #111; }
-  .email { padding: 14mm; page-break-after: always; }
+  .email { padding: 14mm; box-sizing: border-box; page-break-after: always; }
   .email:last-child { page-break-after: auto; }
   .email-header { border-bottom: 2px solid #cbd5e1; padding-bottom: 10px; margin-bottom: 16px; }
   .email-header h1 { font-size: 18px; margin: 0 0 8px; }
