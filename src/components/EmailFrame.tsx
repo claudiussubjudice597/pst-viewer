@@ -197,48 +197,51 @@ export function EmailFrame({
       }
     }
 
-    const onLoad = () => {
+    let last = 0
+    const measure = () => {
       const doc = iframe.contentDocument
       if (!doc) return
-
-      const head = doc.head ?? doc.getElementsByTagName('head')[0]
-      if (head) {
-        const base = doc.createElement('base')
-        base.setAttribute('target', '_blank')
-        head.insertBefore(base, head.firstChild)
-        const style = doc.createElement('style')
-        style.textContent = BASE_CSS
-        head.appendChild(style)
+      const h = Math.max(doc.documentElement?.scrollHeight ?? 0, doc.body?.scrollHeight ?? 0)
+      if (h > 0 && Math.abs(h - last) > 2) {
+        last = h
+        iframe.style.height = `${h}px`
       }
+    }
 
-      doc.addEventListener('click', onClick)
-
-      let last = 0
-      const measure = () => {
-        const h = Math.max(doc.documentElement?.scrollHeight ?? 0, doc.body?.scrollHeight ?? 0)
-        if (h > 0 && Math.abs(h - last) > 2) {
-          last = h
-          iframe.style.height = `${h}px`
+    const setup = () => {
+      const doc = iframe.contentDocument
+      if (!doc || !doc.body) return
+      if (!doc.getElementById('pstv-base-style')) {
+        const head = doc.head ?? doc.getElementsByTagName('head')[0]
+        if (head) {
+          const base = doc.createElement('base')
+          base.setAttribute('target', '_blank')
+          head.insertBefore(base, head.firstChild)
+          const style = doc.createElement('style')
+          style.id = 'pstv-base-style'
+          style.textContent = BASE_CSS
+          head.appendChild(style)
+        }
+        doc.addEventListener('click', onClick)
+        // Re-measure as each image finishes (remote images arrive over time).
+        for (const img of Array.from(doc.images || [])) {
+          if (!img.complete) img.addEventListener('load', measure, { once: true })
         }
       }
       measure()
       highlight()
-      // Re-measure after late layout (fonts / inline images / reflow).
-      for (const t of [50, 200, 500, 1200]) timers.push(window.setTimeout(measure, t))
-      // Re-measure as each image finishes loading.
-      for (const img of Array.from(doc.images || [])) {
-        if (!img.complete) img.addEventListener('load', measure, { once: true })
-      }
     }
 
-    iframe.addEventListener('load', onLoad)
-    // Terms changed without an HTML change (the iframe is already loaded): just
-    // re-highlight in place, without yanking the user's scroll position.
-    const doc = iframe.contentDocument
-    if (doc?.body && doc.readyState === 'complete') highlight()
+    // Size and show the email as soon as it parses, WITHOUT waiting for the
+    // iframe `load` event: that only fires once every remote image has loaded,
+    // and a slow or throttled server can stall it indefinitely, which would
+    // leave the iframe collapsed to 0 height (a blank email). The early timers
+    // also cover the already-loaded case when only `terms` changed.
+    iframe.addEventListener('load', setup)
+    for (const t of [0, 60, 200, 500, 1200]) timers.push(window.setTimeout(setup, t))
 
     return () => {
-      iframe.removeEventListener('load', onLoad)
+      iframe.removeEventListener('load', setup)
       for (const t of timers) clearTimeout(t)
     }
     // `terms` is captured via the stable `termsKey`; depending on the array

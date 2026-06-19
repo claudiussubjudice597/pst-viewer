@@ -121,7 +121,12 @@ export function printHtmlDocument(html: string): void {
   const cleanup = () => setTimeout(remove, 1000)
   const safety = window.setTimeout(remove, 120000)
 
-  iframe.onload = () => {
+  let printStarted = false
+  let printCap = 0
+  const doPrint = () => {
+    if (printStarted) return
+    printStarted = true
+    clearTimeout(printCap)
     const win = iframe.contentWindow
     if (!win) {
       cleanup()
@@ -131,22 +136,24 @@ export function printHtmlDocument(html: string): void {
       clearTimeout(safety)
       cleanup()
     }
-    // Let data-URL images settle before printing.
-    setTimeout(() => {
-      try {
-        // If focus is inside the sandboxed email reader iframe, the browser
-        // suppresses the print dialog (it silently never opens, then they all
-        // flood out when that iframe is removed). Move focus out first.
-        const active = document.activeElement as HTMLElement | null
-        if (active && active.tagName === 'IFRAME') active.blur()
-        win.focus()
-        win.print()
-      } catch {
-        clearTimeout(safety)
-        cleanup()
-      }
-    }, 300)
+    try {
+      // If focus is inside the sandboxed email reader iframe, the browser
+      // suppresses the print dialog (it silently never opens, then they all
+      // flood out when that iframe is removed). Move focus out first.
+      const active = document.activeElement as HTMLElement | null
+      if (active && active.tagName === 'IFRAME') active.blur()
+      win.focus()
+      win.print()
+    } catch {
+      clearTimeout(safety)
+      cleanup()
+    }
   }
+
+  // Print shortly after load so images settle, but also print on a cap even if
+  // `load` never fires because a remote image is stalling on a slow server.
+  iframe.onload = () => window.setTimeout(doPrint, 300)
+  printCap = window.setTimeout(doPrint, 4000)
 
   iframe.srcdoc = html
 }
