@@ -4,6 +4,12 @@ A fast, private, **fully in-browser** viewer for Outlook **`.pst` / `.ost`** mai
 
 Installable as an offline app (PWA): load the site once and it keeps working with no internet.
 
+## Use it now
+
+**Live app: https://bod09.github.io/pst-viewer/**
+
+No setup needed. Open the link, drop in a `.pst`, `.ost`, or `.zip`, and start reading. Nothing is uploaded; everything runs in your browser (see [Privacy](#privacy)). If you would rather run or host it yourself, see [Run it](#run-it) and [Deploy](#deploy).
+
 ## Screenshots
 
 | | |
@@ -20,7 +26,7 @@ Installable as an offline app (PWA): load the site once and it keeps working wit
 - **1:1 email viewing**: full HTML rendering (and RTF-encapsulated HTML) with inline images, in a sandboxed frame. Remote images are blocked by default, like a normal mail client.
 - **Attachment previews**: images, PDF, text/code, audio, video, nested emails, **spreadsheets** (`.xlsx/.xls/.csv/.ods`), and **Word** (`.docx`). Anything else is one-click downloadable.
 - **Fast fuzzy search** across all mailboxes: subjects, senders, recipients, body text, and attachment filenames. Typo-tolerant.
-- **OCR** (opt-in): recognizes text inside image attachments so it becomes searchable. Engine and model are bundled for full offline use.
+- **OCR** (automatic): text inside image attachments is recognized in the background so it becomes searchable. Engine and model are bundled for full offline use.
 - **Export to PDF**: a single email, or merge several into one PDF (oldest-first or newest-first).
 - **Offline PWA**: works with no connection after first load, and is installable.
 
