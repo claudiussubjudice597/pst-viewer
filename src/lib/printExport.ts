@@ -154,10 +154,12 @@ export function printHtmlDocument(html: string): void {
     }
   }
 
-  // Print shortly after load so images settle, but also print on a cap even if
-  // `load` never fires because a remote image is stalling on a slow server.
-  iframe.onload = () => window.setTimeout(doPrint, 300)
-  printCap = window.setTimeout(doPrint, 4000)
+  // Open the dialog as soon as the email is ready: on load (images settled,
+  // which is fast once they are cached), or within a short cap if a remote
+  // image is stalling. Stalled images are dropped above, so they cannot hold
+  // it up, and the cap keeps it feeling instant rather than hung.
+  iframe.onload = () => doPrint()
+  printCap = window.setTimeout(doPrint, 500)
 
   iframe.srcdoc = html
 }
