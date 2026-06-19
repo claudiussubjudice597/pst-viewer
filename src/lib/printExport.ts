@@ -68,15 +68,15 @@ function section(content: MessageContent): string {
 export function buildPrintDocument(contents: MessageContent[]): string {
   const sections = contents.map(section).join('\n')
   // Empty <title> + `@page { margin: 0 }` make the browser omit its own
-  // date/title/URL headers & footers; page margins come from .email padding.
-  // `size: A4` pins pagination so it does not depend on the device's default
-  // paper size (Chrome OS can differ from Windows and spill a sliver onto an
-  // extra page). The `!important` html/body reset wins over any sizing rules
-  // that leak in from an individual email's own CSS (some set body{height:100%}),
-  // which would otherwise force a full-height body and a blank trailing page.
+  // date/title/URL headers & footers; page padding comes from .email. We do not
+  // pin a paper size: the browser's Save-as-PDF dialog already lets the user
+  // choose one, defaulting to their locale (Letter in the US, A4 elsewhere). The
+  // `!important` html/body reset wins over any sizing rules that leak in from an
+  // individual email's own CSS (some set body{height:100%}), which would
+  // otherwise force a full-height body and a blank trailing page.
   return `<!doctype html><html><head><meta charset="utf-8"><title></title>
 <style>
-  @page { size: A4; margin: 0; }
+  @page { margin: 0; }
   html, body { height: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; }
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: #111; }
   .email { padding: 14mm; box-sizing: border-box; page-break-after: always; }
