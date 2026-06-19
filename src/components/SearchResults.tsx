@@ -33,12 +33,12 @@ export function SearchResults() {
           Search results
         </span>
         {results.length > 0 && (
-          <span className="text-[11px] text-slate-500">{results.length}</span>
+          <span className="text-[11px] text-slate-400">{results.length}</span>
         )}
       </div>
 
       {results.length === 0 ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center text-sm text-slate-600">
+        <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center text-sm text-slate-400">
           {searching ? (
             <>
               <Spinner className="h-5 w-5 text-sky-400" />
@@ -48,7 +48,7 @@ export function SearchResults() {
             <>
               <div>No matches for “{query}”.</div>
               {anyIndexing && (
-                <div className="text-xs text-slate-500">Still indexing, try again shortly.</div>
+                <div className="text-xs text-slate-400">Still indexing, try again shortly.</div>
               )}
             </>
           )}
@@ -105,8 +105,8 @@ function HitRow({
 }) {
   return (
     <div
-      className={`flex h-full w-full items-stretch border-b border-slate-800/70 transition ${
-        selected ? 'bg-sky-500/15' : 'hover:bg-slate-800/40'
+      className={`flex h-full w-full items-stretch border-b border-b-slate-800/70 border-l-2 transition ${
+        selected ? 'border-l-sky-400 bg-sky-500/15' : 'border-l-transparent hover:bg-slate-800/40'
       }`}
     >
       <label
@@ -126,17 +126,17 @@ function HitRow({
           <span className="min-w-0 flex-1 truncate text-sm text-slate-200" data-tip={hit.subject}>
             {hit.subject || '(no subject)'}
           </span>
-          {hit.hasAttachments && <Paperclip className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
-          <span className="shrink-0 text-[11px] tabular-nums text-slate-500">
+          {hit.hasAttachments && <Paperclip className="h-3.5 w-3.5 shrink-0 text-slate-400" />}
+          <span className="shrink-0 text-[11px] tabular-nums text-slate-400">
             {formatDateShort(hit.date)}
           </span>
         </div>
-        <div className="flex items-center gap-1.5 text-[12px] text-slate-500">
+        <div className="flex items-center gap-1.5 text-[12px] text-slate-400">
           <span className="truncate">{hit.from || '(unknown)'}</span>
           {sourceLabel && (
             <>
               <span className="text-slate-700">·</span>
-              <span className="shrink-0 truncate text-slate-600">{sourceLabel}</span>
+              <span className="shrink-0 truncate text-slate-400">{sourceLabel}</span>
             </>
           )}
         </div>

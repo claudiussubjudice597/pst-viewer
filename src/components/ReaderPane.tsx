@@ -29,7 +29,7 @@ export function ReaderPane() {
 
 function Empty({ children }: { children: ReactNode }) {
   return (
-    <section className="flex h-full flex-col items-center justify-center bg-slate-950 p-8 text-center text-sm text-slate-600">
+    <section className="flex h-full flex-col items-center justify-center bg-slate-950 p-8 text-center text-sm text-slate-400">
       {children}
     </section>
   )

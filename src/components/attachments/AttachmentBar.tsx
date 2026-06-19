@@ -72,7 +72,7 @@ function Chip({ meta, onClick }: { meta: AttachmentMeta; onClick: () => void }) 
       <span className="min-w-0">
         <span className="block truncate text-sm text-slate-200">{meta.name}</span>
         {meta.size > 0 && (
-          <span className="block text-[11px] text-slate-500">{formatBytes(meta.size)}</span>
+          <span className="block text-[11px] text-slate-400">{formatBytes(meta.size)}</span>
         )}
       </span>
     </button>

@@ -108,7 +108,7 @@ function EmptyState() {
         <img src={`${import.meta.env.BASE_URL}icon.svg`} alt="" className="h-7 w-7" />
         <div className="leading-tight">
           <div className="text-sm font-semibold text-slate-100">PST Viewer</div>
-          <div className="text-[11px] text-slate-500">Local · Offline · Private</div>
+          <div className="text-[11px] text-slate-400">Local · Offline · Private</div>
         </div>
       </div>
       <DropZone />

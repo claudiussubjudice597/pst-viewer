@@ -116,7 +116,7 @@ function FileView({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between gap-3 border-b border-slate-800 bg-slate-900/60 px-4 py-2 text-xs text-slate-500">
+      <div className="flex items-center justify-between gap-3 border-b border-slate-800 bg-slate-900/60 px-4 py-2 text-xs text-slate-400">
         <span className="truncate">{file.detected.mime || 'application/octet-stream'}</span>
         <a
           href={file.blobUrl}
@@ -324,7 +324,7 @@ function DocxView({ bytes }: { bytes: Uint8Array }) {
   return (
     <div className="min-h-full bg-slate-300 p-4">
       {loading && (
-        <div className="py-8 text-center text-sm text-slate-600">
+        <div className="py-8 text-center text-sm text-slate-400">
           <Spinner className="mx-auto mb-2 h-5 w-5 text-sky-500" />
           Loading document…
         </div>
@@ -384,19 +384,19 @@ function EmbeddedView({
 function DownloadPrompt({ detected }: { detected: DetectedType }) {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 p-12 text-center text-slate-400">
-      <FileGeneric className="h-12 w-12 text-slate-600" />
+      <FileGeneric className="h-12 w-12 text-slate-400" />
       <div>
         No inline preview for{' '}
         <span className="font-medium text-slate-200">.{detected.ext || 'file'}</span> files.
       </div>
-      <div className="text-xs text-slate-500">Use the Download button above to save it.</div>
+      <div className="text-xs text-slate-400">Use the Download button above to save it.</div>
     </div>
   )
 }
 
 function Centered({ children }: { children: ReactNode }) {
   return (
-    <div className="flex h-full flex-col items-center justify-center p-8 text-center text-sm text-slate-500">
+    <div className="flex h-full flex-col items-center justify-center p-8 text-center text-sm text-slate-400">
       {children}
     </div>
   )

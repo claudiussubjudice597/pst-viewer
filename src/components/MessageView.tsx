@@ -73,7 +73,7 @@ export function MessageView({
           <HeaderLine label="From">
             <span className="text-slate-200">{from}</span>
             {content.fromEmail && content.fromName && (
-              <span className="text-slate-500"> &lt;{content.fromEmail}&gt;</span>
+              <span className="text-slate-400"> &lt;{content.fromEmail}&gt;</span>
             )}
           </HeaderLine>
           {content.to.length > 0 && (
@@ -123,7 +123,7 @@ export function MessageView({
             {content.text}
           </pre>
         ) : (
-          <div className="p-8 text-center text-sm text-slate-600">(No message content)</div>
+          <div className="p-8 text-center text-sm text-slate-400">(No message content)</div>
         )}
       </div>
     </section>
@@ -147,7 +147,7 @@ function Recipients({ list }: { list: RecipientInfo[] }) {
 function HeaderLine({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex gap-2">
-      <span className="w-12 shrink-0 text-slate-500">{label}</span>
+      <span className="w-12 shrink-0 text-slate-400">{label}</span>
       <span className="min-w-0 flex-1 text-slate-300">{children}</span>
     </div>
   )

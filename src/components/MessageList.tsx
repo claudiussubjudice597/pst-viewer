@@ -30,7 +30,7 @@ export function MessageList() {
           Messages
         </span>
         {messages.length > 0 && (
-          <span className="text-[11px] text-slate-500">{messages.length}</span>
+          <span className="text-[11px] text-slate-400">{messages.length}</span>
         )}
       </div>
 
@@ -93,8 +93,8 @@ function MessageRow({
   const from = message.fromName || message.fromEmail || '(unknown sender)'
   return (
     <div
-      className={`flex h-full w-full items-stretch border-b border-slate-800/70 transition ${
-        selected ? 'bg-sky-500/15' : 'hover:bg-slate-800/40'
+      className={`flex h-full w-full items-stretch border-b border-b-slate-800/70 border-l-2 transition ${
+        selected ? 'border-l-sky-400 bg-sky-500/15' : 'border-l-transparent hover:bg-slate-800/40'
       }`}
     >
       <label
@@ -120,8 +120,8 @@ function MessageRow({
           >
             {from}
           </span>
-          {message.hasAttachments && <Paperclip className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
-          <span className="shrink-0 text-[11px] tabular-nums text-slate-500">
+          {message.hasAttachments && <Paperclip className="h-3.5 w-3.5 shrink-0 text-slate-400" />}
+          <span className="shrink-0 text-[11px] tabular-nums text-slate-400">
             {formatDateShort(message.date)}
           </span>
         </div>
@@ -135,7 +135,7 @@ function MessageRow({
 
 function Centered({ children }: { children: ReactNode }) {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center p-6 text-center text-sm text-slate-600">
+    <div className="flex flex-1 flex-col items-center justify-center p-6 text-center text-sm text-slate-400">
       {children}
     </div>
   )

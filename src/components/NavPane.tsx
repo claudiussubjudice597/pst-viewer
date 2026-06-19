@@ -14,7 +14,7 @@ export function NavPane() {
         <img src={`${import.meta.env.BASE_URL}icon.svg`} alt="" className="h-7 w-7" />
         <div className="leading-tight">
           <div className="text-sm font-semibold text-slate-100">PST Viewer</div>
-          <div className="text-[11px] text-slate-500">Local · Offline · Private</div>
+          <div className="text-[11px] text-slate-400">Local · Offline · Private</div>
         </div>
       </div>
 
@@ -122,7 +122,7 @@ function SourceTree({ source }: { source: Source }) {
         {source.status === 'ready' && !editing && (
           <button
             onClick={startEdit}
-            className="text-slate-600 opacity-0 transition hover:text-slate-200 group-hover:opacity-100"
+            className="text-slate-400 opacity-0 transition hover:text-slate-200 group-hover:opacity-100"
             data-tip="Rename"
           >
             <Pencil className="h-3.5 w-3.5" />
@@ -130,7 +130,7 @@ function SourceTree({ source }: { source: Source }) {
         )}
         <button
           onClick={() => removeSource(source.id)}
-          className="text-slate-600 opacity-0 transition hover:text-rose-400 group-hover:opacity-100"
+          className="text-slate-400 opacity-0 transition hover:text-rose-400 group-hover:opacity-100"
           data-tip="Remove mailbox"
         >
           <Trash className="h-4 w-4" />
@@ -138,7 +138,7 @@ function SourceTree({ source }: { source: Source }) {
       </div>
 
       {source.status === 'parsing' && (
-        <p className="px-3 pb-1 text-[11px] text-slate-500">Reading folders…</p>
+        <p className="px-3 pb-1 text-[11px] text-slate-400">Reading folders…</p>
       )}
       {source.status === 'error' && (
         <p className="px-3 pb-1 text-[11px] text-rose-400" data-tip={source.error}>
@@ -146,14 +146,14 @@ function SourceTree({ source }: { source: Source }) {
         </p>
       )}
       {source.status === 'ready' && !source.indexed && source.indexProgress && (
-        <p className="px-3 pb-1 text-[11px] text-slate-500">Indexing for search… {pct}%</p>
+        <p className="px-3 pb-1 text-[11px] text-slate-400">Indexing for search… {pct}%</p>
       )}
       {source.status === 'ready' &&
         source.indexed &&
         !source.ocrDone &&
         source.ocrProgress &&
         source.ocrProgress.total > 0 && (
-          <p className="px-3 pb-1 text-[11px] text-slate-500">
+          <p className="px-3 pb-1 text-[11px] text-slate-400">
             Reading images… {source.ocrProgress.done}/{source.ocrProgress.total}
           </p>
         )}
@@ -190,7 +190,9 @@ function FolderRow({
       <div
         onClick={() => selectFolder(sourceId, node.id)}
         className={`flex cursor-pointer items-center gap-1 rounded-md py-1 pr-2 text-sm transition ${
-          selected ? 'bg-sky-500/15 text-sky-100' : 'text-slate-300 hover:bg-slate-800/60'
+          selected
+            ? 'border-l-2 border-l-sky-400 bg-sky-500/15 font-medium text-sky-100'
+            : 'border-l-2 border-l-transparent text-slate-300 hover:bg-slate-800/60'
         }`}
         style={{ paddingLeft: depth * 14 + 6 }}
       >
@@ -200,19 +202,19 @@ function FolderRow({
               e.stopPropagation()
               toggleFolder(sourceId, node.id)
             }}
-            className="shrink-0 rounded p-0.5 text-slate-500 hover:text-slate-200"
+            className="shrink-0 rounded p-0.5 text-slate-400 hover:text-slate-200"
           >
             <Caret className={`h-3.5 w-3.5 transition-transform ${expanded ? 'rotate-90' : ''}`} />
           </button>
         ) : (
           <span className="w-[18px] shrink-0" />
         )}
-        <FolderIcon className="h-4 w-4 shrink-0 text-slate-500" />
+        <FolderIcon className="h-4 w-4 shrink-0 text-slate-400" />
         <span className="min-w-0 flex-1 truncate" data-tip={node.name}>
           {node.name}
         </span>
         {node.messageCount > 0 && (
-          <span className="shrink-0 text-[11px] tabular-nums text-slate-500">
+          <span className="shrink-0 text-[11px] tabular-nums text-slate-400">
             {node.messageCount}
           </span>
         )}
