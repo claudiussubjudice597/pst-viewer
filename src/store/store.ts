@@ -506,6 +506,9 @@ export const useApp = create<AppState>((set, get) => {
       const picks = Object.values(get().exportSel)
       if (!picks.length || get().exporting) return
       set({ exporting: true })
+      // Never let the buttons stay disabled if a fetch stalls (e.g. the worker
+      // is busy with background OCR); the user can always retry.
+      const safety = setTimeout(() => set({ exporting: false }), 30000)
       Promise.all(picks.map((p) => pst.getMessageContent(p.sourceId, p.messageId)))
         .then((contents) => {
           const valid = contents.filter((c): c is MessageContent => c != null)
@@ -513,18 +516,25 @@ export const useApp = create<AppState>((set, get) => {
           valid.sort((a, b) => dir * ((a.date ?? 0) - (b.date ?? 0)))
           if (valid.length) printHtmlDocument(buildPrintDocument(valid))
         })
-        .finally(() => set({ exporting: false }))
+        .finally(() => {
+          clearTimeout(safety)
+          set({ exporting: false })
+        })
     },
 
     exportSingle: (sourceId, messageId) => {
       if (get().exporting) return
       set({ exporting: true })
+      const safety = setTimeout(() => set({ exporting: false }), 30000)
       pst
         .getMessageContent(sourceId, messageId)
         .then((content) => {
           if (content) printHtmlDocument(buildPrintDocument([content]))
         })
-        .finally(() => set({ exporting: false }))
+        .finally(() => {
+          clearTimeout(safety)
+          set({ exporting: false })
+        })
     },
   }
 })

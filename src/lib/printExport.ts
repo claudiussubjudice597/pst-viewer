@@ -109,7 +109,17 @@ export function printHtmlDocument(html: string): void {
   })
   document.body.appendChild(iframe)
 
-  const cleanup = () => setTimeout(() => iframe.remove(), 1000)
+  // Remove the hidden iframe once, whether the print finishes, is cancelled
+  // (onafterprint may never fire then), or never opens. Without the safety
+  // timer these can pile up and bog the page down over a session.
+  let removed = false
+  const remove = () => {
+    if (removed) return
+    removed = true
+    iframe.remove()
+  }
+  const cleanup = () => setTimeout(remove, 1000)
+  const safety = window.setTimeout(remove, 120000)
 
   iframe.onload = () => {
     const win = iframe.contentWindow
@@ -117,13 +127,17 @@ export function printHtmlDocument(html: string): void {
       cleanup()
       return
     }
-    win.onafterprint = cleanup
+    win.onafterprint = () => {
+      clearTimeout(safety)
+      cleanup()
+    }
     // Let data-URL images settle before printing.
     setTimeout(() => {
       try {
         win.focus()
         win.print()
       } catch {
+        clearTimeout(safety)
         cleanup()
       }
     }, 300)
