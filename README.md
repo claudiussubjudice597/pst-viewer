@@ -23,10 +23,10 @@ No setup needed. Open the link, drop in a `.pst`, `.ost`, or `.zip`, and start r
 
 - **Open** `.pst`, `.ost`, and `.zip` files (zips are scanned automatically for mailboxes, including nested ones), by drag-and-drop or browse.
 - **Multiple mailboxes** at once, with smart auto-labels and inline rename.
-- **1:1 email viewing**: full HTML rendering (and RTF-encapsulated HTML) with inline images, in a sandboxed frame. Remote images are blocked by default, like a normal mail client.
+- **1:1 email viewing**: full HTML rendering (and RTF-encapsulated HTML) with inline images, in a sandboxed frame. Remote images are blocked by default, like a normal mail client. **Click any image to view it full screen** and zoom to actual size.
 - **Attachment previews**: images, PDF, text/code, audio, video, nested emails, **spreadsheets** (`.xlsx/.xls/.csv/.ods`), and **Word** (`.docx`). Anything else is one-click downloadable.
-- **Fast fuzzy search** across all mailboxes: subjects, senders, recipients, body text, and attachment filenames. Typo-tolerant.
-- **OCR** (automatic): text inside image attachments is recognized in the background so it becomes searchable. Engine and model are bundled for full offline use.
+- **Fast search** across all mailboxes: subjects, senders, recipients, body text, attachment names, and text inside images. Words are typo-tolerant (fuzzy); numbers and reference codes are matched **exactly**, so an ID search stays precise. Matches are highlighted in the open email (the text, and the matching picture) and it scrolls to the first hit.
+- **OCR** (automatic): text inside images is read in the background and made searchable, covering both image attachments and pictures embedded in the email body. Images are sharpened first to read small text more reliably. Engine and model are bundled for full offline use.
 - **Export to PDF**: a single email, or merge several into one PDF (oldest-first or newest-first).
 - **Offline PWA**: works with no connection after first load, and is installable.
 
@@ -64,4 +64,4 @@ React + Vite + TypeScript + Tailwind. PST parsing via [`@hiraokahypertools/pst-e
 - **PowerPoint (`.pptx`/`.ppt`)** and **OpenDocument text (`.odt`)** attachments are download-only (no reliable in-browser renderer).
 - Corrupt mailboxes show a clear per-source error; other loaded mailboxes keep working.
 - Search becomes available for a mailbox once its background indexing finishes (a progress indicator is shown).
-- OCR is accurate but slow (a few seconds per image), which is inherent to on-device OCR.
+- **OCR runs in the background after a mailbox opens**, so text inside images becomes searchable a little after everything else. A "Reading images" indicator shows the progress, and search results note when it is still running. It is sharpened for accuracy, but very small or low-contrast text can still be misread. OCR results are not cached between sessions yet, so this pass repeats each time a mailbox is opened.
