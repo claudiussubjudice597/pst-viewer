@@ -296,7 +296,7 @@ export const useApp = create<AppState>((set, get) => {
             if (data) {
               const blob = new Blob([data.data], { type: data.mime || 'image/png' })
               const text = await lib.recognizeImage(worker, blob)
-              if (text) await pst.addOcrText(sourceId, t.messageId, text)
+              if (text) await pst.addOcrText(sourceId, t.messageId, t.index, text)
             }
           } catch {
             /* skip unreadable image */

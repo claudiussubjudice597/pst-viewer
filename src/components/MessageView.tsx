@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useApp } from '../store/store'
+import { pst } from '../worker/client'
 import type { MessageContent, RecipientInfo } from '../types'
 import { formatDate } from '../lib/format'
 import { categoryFromNameMime } from '../lib/detectType'
 import { sanitizeEmailHtml } from '../lib/sanitizeHtml'
+import { queryTerms, termsRegExp } from '../lib/highlight'
 import { EmailFrame } from './EmailFrame'
 import { AttachmentBar } from './attachments/AttachmentBar'
 import { Printer } from './icons'
@@ -18,6 +20,28 @@ export function MessageView({
   content: MessageContent
 }) {
   const [allowRemote, setAllowRemote] = useState(false)
+  const searchQuery = useApp((s) => s.searchQuery)
+  const terms = useMemo(() => queryTerms(searchQuery), [searchQuery])
+  const [ocrHits, setOcrHits] = useState<number[]>([])
+
+  // Which image attachments contain the active search text (via OCR), so we can
+  // point the user at the image their match actually lives in.
+  useEffect(() => {
+    let alive = true
+    if (!searchQuery.trim()) {
+      setOcrHits([])
+      return
+    }
+    pst
+      .ocrMatches(sourceId, messageId, searchQuery)
+      .then((h) => {
+        if (alive) setOcrHits(h)
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [sourceId, messageId, searchQuery])
 
   // cid: → blob URL for inline images; revoked when the message changes.
   const cidUrls = useMemo(() => {
@@ -100,6 +124,7 @@ export function MessageView({
           sourceId={sourceId}
           messageId={messageId}
           attachments={visibleAttachments}
+          ocrHits={ocrHits}
         />
       )}
 
@@ -117,10 +142,10 @@ export function MessageView({
 
       <div className="scroll-clear min-h-0 flex-1 overflow-y-auto">
         {sanitized ? (
-          <EmailFrame html={sanitized.html} />
+          <EmailFrame html={sanitized.html} terms={terms} />
         ) : content.text ? (
           <pre className="m-0 min-h-full whitespace-pre-wrap break-words bg-white px-6 py-4 font-sans text-sm text-slate-900">
-            {content.text}
+            {terms.length ? <HighlightedText text={content.text} terms={terms} /> : content.text}
           </pre>
         ) : (
           <div className="p-8 text-center text-sm text-slate-400">(No message content)</div>
@@ -128,6 +153,42 @@ export function MessageView({
       </div>
     </section>
   )
+}
+
+/** Plain-text body with the active search terms highlighted; scrolls to the first. */
+function HighlightedText({ text, terms }: { text: string; terms: string[] }) {
+  const firstRef = useRef<HTMLElement>(null)
+  const key = terms.join('')
+  useEffect(() => {
+    firstRef.current?.scrollIntoView({ block: 'center' })
+  }, [text, key])
+
+  const re = termsRegExp(terms)
+  if (!re) return <>{text}</>
+  const nodes: ReactNode[] = []
+  let last = 0
+  let i = 0
+  let first = true
+  let m: RegExpExecArray | null
+  re.lastIndex = 0
+  while ((m = re.exec(text))) {
+    if (m.index > last) nodes.push(text.slice(last, m.index))
+    const isFirst = first
+    first = false
+    nodes.push(
+      <mark
+        key={i++}
+        ref={isFirst ? firstRef : undefined}
+        className={`rounded-sm text-slate-900 ${isFirst ? 'bg-amber-400' : 'bg-yellow-300'}`}
+      >
+        {m[0]}
+      </mark>,
+    )
+    last = m.index + m[0].length
+    if (m[0].length === 0) re.lastIndex++
+  }
+  if (last < text.length) nodes.push(text.slice(last))
+  return <>{nodes}</>
 }
 
 function Recipients({ list }: { list: RecipientInfo[] }) {

@@ -1,5 +1,6 @@
 import * as Comlink from 'comlink'
 import MiniSearch from 'minisearch'
+import { queryTerms } from '../lib/highlight'
 import {
   Consts,
   openPst,
@@ -38,6 +39,8 @@ interface SourceEntry {
   messages: Map<string, IPSTMessage>
   /** Cached attachment handles per message id, for lazy byte fetching. */
   attachments: Map<string, IPSTAttachment[]>
+  /** OCR text per image attachment, keyed `${messageId}:${index}` (for locating matches). */
+  ocr: Map<string, string>
   /** Search-index document ids contributed by this source (for cleanup). */
   searchIds: Set<string>
 }
@@ -557,6 +560,7 @@ const api = {
       folders: new Map(),
       messages: new Map(),
       attachments: new Map(),
+      ocr: new Map(),
       searchIds: new Set(),
     }
     sources.set(sourceId, entry)
@@ -778,13 +782,37 @@ const api = {
     return out
   },
 
-  /** Merge OCR-recognized text into a message's search-index entry. */
-  async addOcrText(sourceId: string, messageId: string, text: string): Promise<void> {
+  /** Merge OCR-recognized text into a message's search-index entry (and remember
+   *  it per image attachment so a match can be traced back to a specific image). */
+  async addOcrText(
+    sourceId: string,
+    messageId: string,
+    index: number,
+    text: string,
+  ): Promise<void> {
+    const entry = sources.get(sourceId)
+    if (entry) entry.ocr.set(`${messageId}:${index}`, text)
     const id = `${sourceId}:${messageId}`
     const doc = searchDocs.get(id)
     if (!doc) return
     doc.ocr = doc.ocr ? `${doc.ocr} ${text}` : text
     if (searchIndex.has(id)) searchIndex.replace(doc)
+  },
+
+  /** Which image attachments of a message contain the query text (via OCR). */
+  async ocrMatches(sourceId: string, messageId: string, query: string): Promise<number[]> {
+    const entry = sources.get(sourceId)
+    if (!entry) return []
+    const terms = queryTerms(query)
+    if (!terms.length) return []
+    const hits: number[] = []
+    const prefix = `${messageId}:`
+    for (const [key, text] of entry.ocr) {
+      if (!key.startsWith(prefix)) continue
+      const low = text.toLowerCase()
+      if (terms.some((t) => low.includes(t))) hits.push(Number(key.slice(prefix.length)))
+    }
+    return hits.sort((a, b) => a - b)
   },
 
   /** Release a source, its PST handle, and its search-index entries. */

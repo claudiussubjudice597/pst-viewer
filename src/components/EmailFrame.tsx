@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { termsRegExp } from '../lib/highlight'
 
 /** Base styles injected into the email document for readability. */
 const BASE_CSS = `
@@ -10,6 +11,8 @@ img{max-width:100%;height:auto}
 a{color:#0b57d0}
 table{max-width:100%}
 blockquote{border-left:3px solid #ddd;margin:0 0 0 8px;padding-left:12px;color:#555}
+mark.pstv-hit{background:#fde047;color:#111;border-radius:2px}
+mark.pstv-hit.pstv-current{background:#f59e0b;box-shadow:0 0 0 2px #f59e0b}
 html{scrollbar-width:auto;scrollbar-color:#94a3b8 #e2e8f0}
 ::-webkit-scrollbar{width:14px;height:14px}
 ::-webkit-scrollbar-track{background:#e2e8f0}
@@ -18,15 +21,74 @@ html{scrollbar-width:auto;scrollbar-color:#94a3b8 #e2e8f0}
 ::-webkit-scrollbar-corner{background:#e2e8f0}
 `
 
+const MAX_MARKS = 500
+
+/** Remove any highlight wrappers we previously added, restoring the text. */
+function clearHighlights(doc: Document) {
+  const marks = doc.querySelectorAll('mark.pstv-hit')
+  if (!marks.length) return
+  marks.forEach((m) => m.replaceWith(doc.createTextNode(m.textContent ?? '')))
+  doc.body?.normalize()
+}
+
+/** Wrap matches of `terms` in <mark> across text nodes. Returns the match count. */
+function applyHighlights(doc: Document, terms: string[]): number {
+  const re = termsRegExp(terms)
+  if (!re || !doc.body) return 0
+  const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      const v = node.nodeValue
+      if (!v || !v.trim()) return NodeFilter.FILTER_REJECT
+      const tag = node.parentElement?.tagName
+      if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'MARK' || tag === 'TEXTAREA') {
+        return NodeFilter.FILTER_REJECT
+      }
+      re.lastIndex = 0
+      return re.test(v) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT
+    },
+  })
+  const targets: Text[] = []
+  let n: Node | null
+  while ((n = walker.nextNode())) targets.push(n as Text)
+
+  let count = 0
+  for (const textNode of targets) {
+    if (count >= MAX_MARKS) break
+    const text = textNode.nodeValue ?? ''
+    const frag = doc.createDocumentFragment()
+    let last = 0
+    re.lastIndex = 0
+    let m: RegExpExecArray | null
+    while ((m = re.exec(text))) {
+      if (m.index > last) frag.appendChild(doc.createTextNode(text.slice(last, m.index)))
+      const mark = doc.createElement('mark')
+      mark.className = 'pstv-hit'
+      mark.textContent = m[0]
+      frag.appendChild(mark)
+      count++
+      last = m.index + m[0].length
+      if (m[0].length === 0) re.lastIndex++ // guard against zero-length matches
+      if (count >= MAX_MARKS) break
+    }
+    if (last < text.length) frag.appendChild(doc.createTextNode(text.slice(last)))
+    textNode.parentNode?.replaceChild(frag, textNode)
+  }
+  return count
+}
+
 /**
  * Renders sanitized email HTML inside a sandboxed, same-origin iframe so the
  * email's own CSS displays accurately while scripts cannot run. The iframe
  * auto-sizes to its content (measured on load, on image loads, and on a few
  * timers — deliberately NOT via ResizeObserver, which can feedback-loop when
  * the height we set changes the content layout).
+ *
+ * When `terms` is non-empty (an active search) the matched words are highlighted
+ * and, on first load, the reader scrolls to the first hit.
  */
-export function EmailFrame({ html }: { html: string }) {
+export function EmailFrame({ html, terms = [] }: { html: string; terms?: string[] }) {
   const ref = useRef<HTMLIFrameElement>(null)
+  const termsKey = terms.join('')
 
   useEffect(() => {
     const iframe = ref.current
@@ -39,6 +101,41 @@ export function EmailFrame({ html }: { html: string }) {
       if (anchor?.href) {
         e.preventDefault()
         window.open(anchor.href, '_blank', 'noopener,noreferrer')
+      }
+    }
+
+    // Scroll the reader pane (the iframe's scrollable ancestor — the iframe
+    // itself is sized to its content) so the first hit is comfortably in view.
+    const scrollToFirstHit = () => {
+      const doc = iframe.contentDocument
+      const mark = doc?.querySelector('mark.pstv-hit') as HTMLElement | null
+      if (!mark) return
+      let container: HTMLElement | null = iframe.parentElement
+      while (container && container !== document.body) {
+        const oy = getComputedStyle(container).overflowY
+        if ((oy === 'auto' || oy === 'scroll') && container.scrollHeight > container.clientHeight + 4) {
+          break
+        }
+        container = container.parentElement
+      }
+      const markTop = mark.getBoundingClientRect().top
+      if (container && container !== document.body) {
+        const top = container.scrollTop + (markTop - container.getBoundingClientRect().top) - 80
+        container.scrollTo({ top: Math.max(0, top), behavior: 'smooth' })
+      } else {
+        mark.scrollIntoView({ block: 'center' })
+      }
+    }
+
+    const highlight = (scroll: boolean) => {
+      const doc = iframe.contentDocument
+      if (!doc || !doc.body) return
+      clearHighlights(doc)
+      if (!terms.length) return
+      const count = applyHighlights(doc, terms)
+      if (count > 0) {
+        doc.querySelector('mark.pstv-hit')?.classList.add('pstv-current')
+        if (scroll) timers.push(window.setTimeout(scrollToFirstHit, 400))
       }
     }
 
@@ -60,16 +157,14 @@ export function EmailFrame({ html }: { html: string }) {
 
       let last = 0
       const measure = () => {
-        const h = Math.max(
-          doc.documentElement?.scrollHeight ?? 0,
-          doc.body?.scrollHeight ?? 0,
-        )
+        const h = Math.max(doc.documentElement?.scrollHeight ?? 0, doc.body?.scrollHeight ?? 0)
         if (h > 0 && Math.abs(h - last) > 2) {
           last = h
           iframe.style.height = `${h}px`
         }
       }
       measure()
+      highlight(true)
       // Re-measure after late layout (fonts / inline images / reflow).
       for (const t of [50, 200, 500, 1200]) timers.push(window.setTimeout(measure, t))
       // Re-measure as each image finishes loading.
@@ -79,11 +174,19 @@ export function EmailFrame({ html }: { html: string }) {
     }
 
     iframe.addEventListener('load', onLoad)
+    // Terms changed without an HTML change (the iframe is already loaded): just
+    // re-highlight in place, without yanking the user's scroll position.
+    const doc = iframe.contentDocument
+    if (doc?.body && doc.readyState === 'complete') highlight(false)
+
     return () => {
       iframe.removeEventListener('load', onLoad)
       for (const t of timers) clearTimeout(t)
     }
-  }, [html])
+    // `terms` is captured via the stable `termsKey`; depending on the array
+    // itself would re-run this effect on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [html, termsKey])
 
   return (
     <iframe
