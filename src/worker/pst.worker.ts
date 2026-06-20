@@ -221,6 +221,20 @@ async function buildFolderTree(folder: IPSTFolder, entry: SourceEntry): Promise<
   }
 }
 
+// Outlook shows folders directly under the mailbox, not under the internal
+// "Top of Personal Folders" container; lift that container's children up a level.
+function liftRootContainer(node: FolderNode): FolderNode {
+  const children: FolderNode[] = []
+  for (const child of node.children) {
+    if (/^top of (personal folders|outlook data file)\b/i.test(child.name)) {
+      children.push(...child.children)
+    } else {
+      children.push(child)
+    }
+  }
+  return { ...node, children }
+}
+
 async function buildSearchDoc(
   sourceId: string,
   folderId: string,
@@ -939,7 +953,7 @@ const api = {
     sources.set(sourceId, entry)
 
     const root = await pstFile.getRootFolder()
-    const rootNode = await buildFolderTree(root, entry)
+    const rootNode = liftRootContainer(await buildFolderTree(root, entry))
 
     let totalMessages = 0
     const sum = (n: FolderNode) => {
