@@ -1,6 +1,7 @@
 import * as Comlink from 'comlink'
 import MiniSearch from 'minisearch'
 import { queryTerms } from '../lib/highlight'
+import { parseTnef, type TnefAttachment } from '../lib/tnef'
 import {
   Consts,
   openPst,
@@ -58,6 +59,8 @@ interface SourceEntry {
   bodyImageCount: Map<string, number>
   /** Search-index document ids contributed by this source (for cleanup). */
   searchIds: Set<string>
+  /** Attachments recovered from a winmail.dat (TNEF), keyed by message id. */
+  tnef: Map<string, TnefAttachment[]>
 }
 
 const sources = new Map<string, SourceEntry>()
@@ -795,6 +798,34 @@ async function buildMessageContent(
     }
   })
 
+  // Unpack a winmail.dat (TNEF) into its real attachments + plain-text body.
+  let tnefBody: string | null = null
+  const tnefIdx = attachmentHandles.findIndex((a) => {
+    const n = (safe(() => a.longFilename, '') || safe(() => a.filename, '')).toLowerCase()
+    return n === 'winmail.dat' || safe(() => a.mimeTag, '').toLowerCase() === 'application/ms-tnef'
+  })
+  if (tnefIdx !== -1) {
+    const raw = safe(() => attachmentHandles[tnefIdx].fileData, undefined)
+    const parsed = raw && raw.byteLength > 0 ? parseTnef(raw) : null
+    if (parsed && (parsed.attachments.length > 0 || parsed.bodyText)) {
+      tnefBody = parsed.bodyText
+      entry.tnef.set(msgId, parsed.attachments)
+      // Replace the opaque winmail.dat chip with the recovered files.
+      const at = attachments.findIndex((x) => x.index === tnefIdx)
+      if (at !== -1) attachments.splice(at, 1)
+      parsed.attachments.forEach((t, i) => {
+        attachments.push({
+          index: -1 - i,
+          name: t.name || `attachment-${i + 1}`,
+          size: t.data.byteLength,
+          mime: t.mime,
+          isInline: false,
+          isEmbeddedMessage: false,
+        })
+      })
+    }
+  }
+
   const bodies = extractBodies(m)
   const delivery = safe(() => m.messageDeliveryTime, null)
   const submit = safe(() => m.clientSubmitTime, null)
@@ -828,7 +859,7 @@ async function buildMessageContent(
     bcc,
     date: (delivery ?? submit)?.getTime() ?? null,
     html: bodies.html || null,
-    text: bodies.text || null,
+    text: bodies.text || tnefBody || null,
     inlineImages,
     attachments,
     headers: safe(() => m.transportMessageHeaders, ''),
@@ -858,6 +889,7 @@ const api = {
       ocr: new Map(),
       bodyImageCount: new Map(),
       searchIds: new Set(),
+      tnef: new Map(),
     }
     sources.set(sourceId, entry)
 
@@ -931,6 +963,13 @@ const api = {
   ): Promise<AttachmentData | null> {
     const entry = sources.get(sourceId)
     if (!entry) return null
+    // Negative index = an attachment recovered from a winmail.dat (TNEF).
+    if (index < 0) {
+      const t = entry.tnef.get(messageId)?.[-1 - index]
+      if (!t) return null
+      const tCopy = t.data.slice(0)
+      return Comlink.transfer({ name: t.name, mime: t.mime, data: tCopy }, [tCopy])
+    }
     const list = entry.attachments.get(messageId)
     const a = list?.[index]
     if (!a) return null
