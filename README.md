@@ -57,7 +57,7 @@ There is no server. When you open a file, the browser reads it **directly from y
 
 ## Tech
 
-React + Vite + TypeScript + Tailwind. PST parsing via [`@hiraokahypertools/pst-extractor`](https://www.npmjs.com/package/@hiraokahypertools/pst-extractor) in a Web Worker. Search via MiniSearch, PDF rendering via pdf.js, spreadsheets via SheetJS, Word via docx-preview, OCR via Tesseract.js, zip handling via fflate, HTML sanitizing via DOMPurify. PWA via vite-plugin-pwa (Workbox).
+React + Vite + TypeScript + Tailwind. PST parsing via [`@hiraokahypertools/pst-extractor`](https://www.npmjs.com/package/@hiraokahypertools/pst-extractor) in a Web Worker. Search via MiniSearch, PDF rendering via pdf.js, spreadsheets via SheetJS, Word via docx-preview, OCR via Tesseract.js, zip handling via fflate, HTML sanitizing via DOMPurify, S/MIME (PKCS#7) parsing via node-forge. TNEF (winmail.dat) and MIME are parsed in-house. PWA via vite-plugin-pwa (Workbox).
 
 ## Known limitations
 
