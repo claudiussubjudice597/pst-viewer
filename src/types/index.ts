@@ -64,8 +64,39 @@ export interface AttachmentData {
   data: ArrayBuffer
 }
 
+/** What kind of Outlook item a message is, so non-email items render properly. */
+export type ItemKind = 'email' | 'contact' | 'appointment'
+
+/** A contact (IPM.Contact) rendered as a card instead of an email. */
+export interface ContactCard {
+  fullName: string
+  emails: { label: string; address: string }[]
+  phones: { label: string; value: string }[]
+  company: string
+  jobTitle: string
+  department: string
+  addresses: { label: string; value: string }[]
+  website: string
+  im: string
+  birthday: number | null
+}
+
+/** A calendar appointment / meeting (IPM.Appointment) rendered as a card. */
+export interface AppointmentCard {
+  location: string
+  start: number | null
+  end: number | null
+  allDay: boolean
+  organizer: string
+  requiredAttendees: string
+  optionalAttendees: string
+  recurrence: string
+}
+
 /** Full content of a single message, fetched lazily when it is opened. */
 export interface MessageContent {
+  /** Item type, so contacts/appointments can render as cards instead of email. */
+  itemKind: ItemKind
   subject: string
   fromName: string
   fromEmail: string
@@ -81,6 +112,10 @@ export interface MessageContent {
   attachments: AttachmentMeta[]
   /** Raw RFC822 transport headers, if present. */
   headers: string
+  /** Present when itemKind is 'contact'. */
+  contact?: ContactCard
+  /** Present when itemKind is 'appointment'. */
+  appointment?: AppointmentCard
 }
 
 /** Result of opening an embedded (nested) email attachment. */

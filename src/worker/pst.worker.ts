@@ -4,15 +4,21 @@ import { queryTerms } from '../lib/highlight'
 import {
   Consts,
   openPst,
+  PSTAppointment,
+  PSTContact,
+  type IPSTAppointment,
   type IPSTAttachment,
+  type IPSTContact,
   type IPSTFile,
   type IPSTFolder,
   type IPSTMessage,
   type ReadFileApi,
 } from '@hiraokahypertools/pst-extractor'
 import type {
+  AppointmentCard,
   AttachmentData,
   AttachmentMeta,
+  ContactCard,
   EmbeddedMessageResult,
   FolderNode,
   InlineImage,
@@ -498,6 +504,95 @@ function attachmentName(a: IPSTAttachment, index: number, isEmbedded: boolean): 
 }
 
 /** Build the full, serializable content of a message (shared by top-level and embedded). */
+/** Map a PST message class to the item kind we render. */
+function itemKindOf(messageClass: string): MessageContent['itemKind'] {
+  const c = (messageClass || '').toLowerCase()
+  if (c.startsWith('ipm.contact')) return 'contact'
+  if (c.startsWith('ipm.appointment') || c.startsWith('ipm.schedule.meeting')) return 'appointment'
+  return 'email'
+}
+
+// Re-wrap a message as a typed contact/appointment, reusing its internals so all
+// getters (including named MAPI properties like email/address) resolve.
+function asContact(m: IPSTMessage): IPSTContact {
+  const x = m as unknown as Record<string, unknown>
+  return new (PSTContact as unknown as new (...a: unknown[]) => IPSTContact)(
+    x._rootProvider,
+    x._node,
+    x._subNode,
+    x._propertyFinder,
+  )
+}
+function asAppointment(m: IPSTMessage): IPSTAppointment {
+  const x = m as unknown as Record<string, unknown>
+  return new (PSTAppointment as unknown as new (...a: unknown[]) => IPSTAppointment)(
+    x._rootProvider,
+    x._node,
+    x._subNode,
+    x._propertyFinder,
+  )
+}
+
+function buildContactCard(m: IPSTMessage): ContactCard {
+  const c = asContact(m)
+  const fullName =
+    safe(() => c.fileUnder, '') ||
+    [safe(() => c.givenName, ''), safe(() => c.middleName, ''), safe(() => c.surname, '')]
+      .filter(Boolean)
+      .join(' ') ||
+    safe(() => m.subject, '')
+  const emails: ContactCard['emails'] = []
+  const pushEmail = (address: string, label: string) => {
+    if (address) emails.push({ label: label || 'Email', address })
+  }
+  pushEmail(safe(() => c.email1EmailAddress, ''), safe(() => c.email1DisplayName, ''))
+  pushEmail(safe(() => c.email2EmailAddress, ''), safe(() => c.email2DisplayName, ''))
+  pushEmail(safe(() => c.email3EmailAddress, ''), safe(() => c.email3DisplayName, ''))
+  const phones: ContactCard['phones'] = []
+  const pushPhone = (value: string, label: string) => {
+    if (value) phones.push({ label, value })
+  }
+  pushPhone(safe(() => c.businessTelephoneNumber, ''), 'Business')
+  pushPhone(safe(() => c.mobileTelephoneNumber, ''), 'Mobile')
+  pushPhone(safe(() => c.homeTelephoneNumber, ''), 'Home')
+  pushPhone(safe(() => c.otherTelephoneNumber, ''), 'Other')
+  pushPhone(safe(() => c.companyMainPhoneNumber, ''), 'Company')
+  pushPhone(safe(() => c.businessFaxNumber, ''), 'Business fax')
+  const addresses: ContactCard['addresses'] = []
+  const pushAddress = (value: string, label: string) => {
+    if (value) addresses.push({ label, value })
+  }
+  pushAddress(safe(() => c.workAddress, ''), 'Work')
+  pushAddress(safe(() => c.homeAddress, ''), 'Home')
+  pushAddress(safe(() => c.otherAddress, ''), 'Other')
+  return {
+    fullName,
+    emails,
+    phones,
+    company: safe(() => c.companyName, ''),
+    jobTitle: safe(() => c.title, ''),
+    department: safe(() => c.departmentName, ''),
+    addresses,
+    website: safe(() => c.businessHomePage, '') || safe(() => c.personalHomePage, ''),
+    im: safe(() => c.instantMessagingAddress, ''),
+    birthday: safe(() => c.birthday, null)?.getTime() ?? null,
+  }
+}
+
+function buildAppointmentCard(m: IPSTMessage): AppointmentCard {
+  const a = asAppointment(m)
+  return {
+    location: safe(() => a.location, ''),
+    start: safe(() => a.startTime, null)?.getTime() ?? null,
+    end: safe(() => a.endTime, null)?.getTime() ?? null,
+    allDay: safe(() => a.subType, false),
+    organizer: safe(() => m.sentRepresentingName, '') || safe(() => m.senderName, ''),
+    requiredAttendees: safe(() => a.requiredAttendees, '') || safe(() => a.toAttendees, ''),
+    optionalAttendees: safe(() => a.ccAttendees, ''),
+    recurrence: safe(() => a.isRecurring, false) ? safe(() => a.recurrencePattern, '') : '',
+  }
+}
+
 async function buildMessageContent(
   m: IPSTMessage,
   msgId: string,
@@ -553,8 +648,10 @@ async function buildMessageContent(
   const bodies = extractBodies(m)
   const delivery = safe(() => m.messageDeliveryTime, null)
   const submit = safe(() => m.clientSubmitTime, null)
+  const kind = itemKindOf(safe(() => m.messageClass, ''))
 
   return {
+    itemKind: kind,
     subject: safe(() => m.subject, '') || '(no subject)',
     fromName: safe(() => m.senderName, '') || safe(() => m.sentRepresentingName, ''),
     fromEmail:
@@ -568,6 +665,8 @@ async function buildMessageContent(
     inlineImages,
     attachments,
     headers: safe(() => m.transportMessageHeaders, ''),
+    contact: kind === 'contact' ? buildContactCard(m) : undefined,
+    appointment: kind === 'appointment' ? buildAppointmentCard(m) : undefined,
   }
 }
 

@@ -10,6 +10,7 @@ import { EmailFrame } from './EmailFrame'
 import { ImageLightbox } from './ImageLightbox'
 import { AttachmentBar } from './attachments/AttachmentBar'
 import { HeadersDialog } from './HeadersDialog'
+import { AppointmentCardView, ContactCardView } from './ItemCard'
 import { Code, Printer } from './icons'
 
 export function MessageView({
@@ -121,30 +122,34 @@ export function MessageView({
             )}
           </div>
         </div>
-        <div className="mt-3 space-y-1 text-sm">
-          <HeaderLine label="From">
-            <span className="text-slate-200">{from}</span>
-            {content.fromEmail && content.fromName && (
-              <span className="text-slate-400"> &lt;{content.fromEmail}&gt;</span>
+        {content.itemKind === 'email' && (
+          <div className="mt-3 space-y-1 text-sm">
+            <HeaderLine label="From">
+              <span className="text-slate-200">{from}</span>
+              {content.fromEmail && content.fromName && (
+                <span className="text-slate-400"> &lt;{content.fromEmail}&gt;</span>
+              )}
+            </HeaderLine>
+            {content.to.length > 0 && (
+              <HeaderLine label="To">
+                <Recipients list={content.to} />
+              </HeaderLine>
             )}
-          </HeaderLine>
-          {content.to.length > 0 && (
-            <HeaderLine label="To">
-              <Recipients list={content.to} />
-            </HeaderLine>
-          )}
-          {content.cc.length > 0 && (
-            <HeaderLine label="Cc">
-              <Recipients list={content.cc} />
-            </HeaderLine>
-          )}
-          {content.bcc.length > 0 && (
-            <HeaderLine label="Bcc">
-              <Recipients list={content.bcc} />
-            </HeaderLine>
-          )}
-          {content.date != null && <HeaderLine label="Date">{formatDate(content.date)}</HeaderLine>}
-        </div>
+            {content.cc.length > 0 && (
+              <HeaderLine label="Cc">
+                <Recipients list={content.cc} />
+              </HeaderLine>
+            )}
+            {content.bcc.length > 0 && (
+              <HeaderLine label="Bcc">
+                <Recipients list={content.bcc} />
+              </HeaderLine>
+            )}
+            {content.date != null && (
+              <HeaderLine label="Date">{formatDate(content.date)}</HeaderLine>
+            )}
+          </div>
+        )}
       </div>
 
       {visibleAttachments.length > 0 && (
@@ -157,20 +162,29 @@ export function MessageView({
       )}
 
       <div className="scroll-clear min-h-0 flex-1 overflow-y-auto">
-        {sanitizedHtml ? (
-          <EmailFrame
-            html={sanitizedHtml}
-            terms={terms}
-            highlightImageUrls={highlightImageUrls}
-            highlightBodyImageIndexes={ocrMatch.bodyImageIndexes}
-            onImageClick={setPreview}
-          />
-        ) : content.text ? (
-          <pre className="m-0 min-h-full whitespace-pre-wrap break-words bg-white px-6 py-4 font-sans text-sm text-slate-900">
-            {terms.length ? <HighlightedText text={content.text} terms={terms} /> : content.text}
-          </pre>
+        {content.itemKind === 'contact' && content.contact ? (
+          <ContactCardView contact={content.contact} notes={content.text} />
         ) : (
-          <div className="p-8 text-center text-sm text-slate-400">(No message content)</div>
+          <>
+            {content.itemKind === 'appointment' && content.appointment && (
+              <AppointmentCardView appointment={content.appointment} />
+            )}
+            {sanitizedHtml ? (
+              <EmailFrame
+                html={sanitizedHtml}
+                terms={terms}
+                highlightImageUrls={highlightImageUrls}
+                highlightBodyImageIndexes={ocrMatch.bodyImageIndexes}
+                onImageClick={setPreview}
+              />
+            ) : content.text ? (
+              <pre className="m-0 min-h-full whitespace-pre-wrap break-words bg-white px-6 py-4 font-sans text-sm text-slate-900">
+                {terms.length ? <HighlightedText text={content.text} terms={terms} /> : content.text}
+              </pre>
+            ) : content.itemKind === 'email' ? (
+              <div className="p-8 text-center text-sm text-slate-400">(No message content)</div>
+            ) : null}
+          </>
         )}
       </div>
       {preview && <ImageLightbox src={preview} onClose={() => setPreview(null)} />}
