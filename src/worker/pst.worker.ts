@@ -242,6 +242,28 @@ async function buildSearchDoc(
 
 const stripExt = (name: string) => name.replace(/\.[^.]+$/, '')
 
+// Default names Outlook gives every personal data file: not a useful mailbox
+// label, so we prefer the user's filename when the store reports one of these.
+function isGenericStoreName(name: string): boolean {
+  const n = (name || '').trim().toLowerCase()
+  return (
+    n === '' ||
+    /^(top of )?(personal folders|outlook data file)\b/.test(n) ||
+    n === 'mailbox' ||
+    n === 'root' ||
+    n === 'root - mailbox'
+  )
+}
+
+/** A tidy label from a filename: drop the extension, underscores to spaces, title-case. */
+function prettyFileName(fileName: string): string {
+  const base = stripExt(fileName)
+    .replace(/_+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+  return base ? base.replace(/\b[a-z]/g, (ch) => ch.toUpperCase()) : 'Mailbox'
+}
+
 const IMAGE_MIME_BY_EXT: Record<string, string> = {
   png: 'image/png',
   jpg: 'image/jpeg',
@@ -770,21 +792,23 @@ const api = {
     }
     sum(rootNode)
 
-    let ownerName = await safeAsync(
+    // Prefer the mailbox's own name when it is meaningful, but Outlook gives
+    // every personal data file a generic name ("Personal Folders" etc.); in that
+    // case the filename the user chose is the better label.
+    const storeName = await safeAsync(
       async () => (await pstFile.getMessageStore()).displayName,
       '',
     )
-    if (!ownerName) {
-      ownerName = await safeAsync(
-        async () => (await pstFile.getTopOfOutlookDataFile()).displayName,
-        '',
-      )
-    }
+    const topName = await safeAsync(
+      async () => (await pstFile.getTopOfOutlookDataFile()).displayName,
+      '',
+    )
+    const ownerName = [storeName, topName].find((n) => n && !isGenericStoreName(n)) ?? ''
 
     return {
       rootFolder: rootNode,
       totalMessages,
-      suggestedLabel: ownerName || stripExt(file.name),
+      suggestedLabel: ownerName || prettyFileName(file.name),
     }
   },
 
