@@ -118,6 +118,14 @@ export interface MessageContent {
   attachments: AttachmentMeta[]
   /** Raw RFC822 transport headers, if present. */
   headers: string
+  /** Colour category names assigned to the item. */
+  categories: string[]
+  /** 'high' or 'low' when the sender marked importance, else null. */
+  importance: 'low' | 'high' | null
+  /** Sensitivity when not normal, else null. */
+  sensitivity: 'personal' | 'private' | 'confidential' | null
+  /** Follow-up flag state when set, else null. */
+  followUp: 'flagged' | 'complete' | null
   /** Present when itemKind is 'contact'. */
   contact?: ContactCard
   /** Present when itemKind is 'appointment'. */

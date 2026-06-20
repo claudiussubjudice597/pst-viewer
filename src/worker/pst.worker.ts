@@ -739,9 +739,26 @@ async function buildMessageContent(
   const delivery = safe(() => m.messageDeliveryTime, null)
   const submit = safe(() => m.clientSubmitTime, null)
   const kind = itemKindOf(safe(() => m.messageClass, ''))
+  const importanceVal = safe(() => m.importance, 1)
+  const sensitivityVal = safe(() => m.sensitivity, 0)
+  const flagRaw = safe(() => m.getProperty(0x1090)?.value, 0)
+  const flagVal = typeof flagRaw === 'number' ? flagRaw : 0
 
   return {
     itemKind: kind,
+    categories: safe(() => m.colorCategories, [])
+      .map((s) => cleanStr(s))
+      .filter(Boolean),
+    importance: importanceVal === 2 ? 'high' : importanceVal === 0 ? 'low' : null,
+    sensitivity:
+      sensitivityVal === 1
+        ? 'personal'
+        : sensitivityVal === 2
+          ? 'private'
+          : sensitivityVal === 3
+            ? 'confidential'
+            : null,
+    followUp: flagVal === 2 ? 'flagged' : flagVal === 1 ? 'complete' : null,
     subject: safe(() => m.subject, '') || '(no subject)',
     fromName: safe(() => m.senderName, '') || safe(() => m.sentRepresentingName, ''),
     fromEmail:

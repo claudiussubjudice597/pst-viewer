@@ -133,6 +133,27 @@ export function MessageView({
             )}
           </div>
         </div>
+        {(content.categories.length > 0 ||
+          content.importance ||
+          content.sensitivity ||
+          content.followUp) && (
+          <div className="mt-2.5 flex flex-wrap gap-1.5">
+            {content.importance === 'high' && <Chip tone="amber">High importance</Chip>}
+            {content.importance === 'low' && <Chip tone="slate">Low importance</Chip>}
+            {content.followUp === 'flagged' && <Chip tone="amber">Flagged</Chip>}
+            {content.followUp === 'complete' && <Chip tone="green">Follow-up complete</Chip>}
+            {content.sensitivity && (
+              <Chip tone="amber">
+                {content.sensitivity.charAt(0).toUpperCase() + content.sensitivity.slice(1)}
+              </Chip>
+            )}
+            {content.categories.map((c) => (
+              <Chip key={c} tone="slate">
+                {c}
+              </Chip>
+            ))}
+          </div>
+        )}
         {content.itemKind === 'email' && (
           <div className="mt-3 space-y-1 text-sm">
             <HeaderLine label="From">
@@ -255,6 +276,19 @@ function Recipients({ list }: { list: RecipientInfo[] }) {
         </span>
       ))}
     </>
+  )
+}
+
+function Chip({ tone, children }: { tone: 'slate' | 'amber' | 'green'; children: ReactNode }) {
+  const tones = {
+    slate: 'border-slate-700 bg-slate-800 text-slate-300',
+    amber: 'border-amber-500/30 bg-amber-500/15 text-amber-300',
+    green: 'border-emerald-500/30 bg-emerald-500/15 text-emerald-300',
+  }
+  return (
+    <span className={`rounded border px-2 py-0.5 text-[11px] font-medium ${tones[tone]}`}>
+      {children}
+    </span>
   )
 }
 
