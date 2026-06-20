@@ -711,6 +711,7 @@ const api = {
     let done = 0
 
     for (const [folderId, folder] of entry.folders) {
+      if (!sources.has(sourceId)) return // source removed mid-index
       const emails = await safeAsync(() => folder.getEmails(), [])
       const docs: SearchDoc[] = []
       for (const m of emails) {
@@ -727,6 +728,12 @@ const api = {
         } catch {
           // skip an unreadable message
         }
+      }
+      // If the source was closed while reading this folder, drop what we staged
+      // instead of leaving orphaned docs in the shared search index.
+      if (!sources.has(sourceId)) {
+        for (const d of docs) searchDocs.delete(d.id)
+        return
       }
       if (docs.length) searchIndex.addAll(docs)
       onProgress?.(done, total)
@@ -839,12 +846,14 @@ const api = {
   async closeSource(sourceId: string): Promise<void> {
     const entry = sources.get(sourceId)
     if (!entry) return
+    // Remove from the registry first (synchronously) so in-flight indexing or
+    // OCR sees the source as gone and stops adding to the shared index.
+    sources.delete(sourceId)
     for (const id of entry.searchIds) {
       if (searchIndex.has(id)) searchIndex.discard(id)
       searchDocs.delete(id)
     }
     await safeAsync(() => entry.file.close(), undefined)
-    sources.delete(sourceId)
   },
 }
 

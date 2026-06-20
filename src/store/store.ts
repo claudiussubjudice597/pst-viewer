@@ -440,11 +440,13 @@ export const useApp = create<AppState>((set, get) => {
       pst
         .getMessageContent(sourceId, messageId)
         .then((content) => {
-          if (get().selection.messageId !== messageId) return
+          const sel = get().selection
+          if (sel.messageId !== messageId || sel.sourceId !== sourceId) return
           set({ messageContent: content, contentLoading: false })
         })
         .catch(() => {
-          if (get().selection.messageId === messageId) {
+          const sel = get().selection
+          if (sel.messageId === messageId && sel.sourceId === sourceId) {
             set({ messageContent: null, contentLoading: false })
           }
         })
@@ -482,11 +484,13 @@ export const useApp = create<AppState>((set, get) => {
       pst
         .getMessageContent(hit.sourceId, hit.messageId)
         .then((content) => {
-          if (get().selection.messageId !== hit.messageId) return
+          const sel = get().selection
+          if (sel.messageId !== hit.messageId || sel.sourceId !== hit.sourceId) return
           set({ messageContent: content, contentLoading: false })
         })
         .catch(() => {
-          if (get().selection.messageId === hit.messageId) {
+          const sel = get().selection
+          if (sel.messageId === hit.messageId && sel.sourceId === hit.sourceId) {
             set({ messageContent: null, contentLoading: false })
           }
         })
@@ -510,9 +514,13 @@ export const useApp = create<AppState>((set, get) => {
       // Never let the buttons stay disabled if a fetch stalls (e.g. the worker
       // is busy with background OCR); the user can always retry.
       const safety = setTimeout(() => set({ exporting: false }), 30000)
-      Promise.all(picks.map((p) => pst.getMessageContent(p.sourceId, p.messageId)))
-        .then((contents) => {
-          const valid = contents.filter((c): c is MessageContent => c != null)
+      // allSettled, not all: one unloadable message must not sink the whole merge.
+      Promise.allSettled(picks.map((p) => pst.getMessageContent(p.sourceId, p.messageId)))
+        .then((results) => {
+          const valid = results
+            .filter((r): r is PromiseFulfilledResult<MessageContent | null> => r.status === 'fulfilled')
+            .map((r) => r.value)
+            .filter((c): c is MessageContent => c != null)
           const dir = direction === 'desc' ? -1 : 1
           valid.sort((a, b) => dir * ((a.date ?? 0) - (b.date ?? 0)))
           if (valid.length) printHtmlDocument(buildPrintDocument(valid))
