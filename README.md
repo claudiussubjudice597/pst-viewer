@@ -23,9 +23,9 @@ No setup needed. Open the link, drop in a `.pst`, `.ost`, or `.zip`, and start r
 
 - **Open** `.pst`, `.ost`, and `.zip` files (zips are scanned automatically for mailboxes, including nested ones), by drag-and-drop or browse. Password-protected mailboxes open too: an Outlook PST password gates Outlook's own UI, not the data, so none is needed to read the mailbox here.
 - **Multiple mailboxes** at once, with smart auto-labels and inline rename.
-- **1:1 email viewing**: full HTML rendering (and RTF-encapsulated HTML) with inline images, in a sandboxed frame. Remote images load like a normal mail client, with invisible tracking pixels (1x1 / hidden images) stripped. **Click any image to view it full screen**, then zoom to actual size and drag to pan. A **Headers** button shows the message's full original transport headers.
+- **1:1 email viewing**: full HTML rendering (and RTF-encapsulated HTML) with inline images, in a sandboxed frame. Remote images load like a normal mail client, with invisible tracking pixels (1x1 / hidden images) stripped. **Click any image to view it full screen**, then zoom to actual size and drag to pan. A **Headers** button shows the message's full original transport headers. Colour categories, follow-up flags, importance, and sensitivity show as chips, and `winmail.dat` (TNEF) and S/MIME signed messages are unpacked to reveal their real body and attachments.
 - **Attachment previews**: images, PDF, text/code, audio, video, nested emails, **spreadsheets** (`.xlsx/.xls/.csv/.ods`), and **Word** (`.docx`). Anything else is one-click downloadable.
-- **Contacts and calendar**: contact items render as cards (name, emails, phones, company, addresses, birthday, notes), distribution lists list their members, and appointments show their time, location, organizer, and attendees, instead of appearing blank.
+- **Every Outlook item type**: contacts (name, emails, phones, company, addresses, birthday, notes), distribution lists (with members), calendar appointments (time, location, organizer, attendees), tasks (status, due date, % complete), journal entries, and sticky notes all render as cards, so nothing shows up blank.
 - **Fast search** across all mailboxes: subjects, senders, recipients, body text, attachment names, and text inside images. Words are typo-tolerant (fuzzy); numbers and reference codes are matched **exactly**, so an ID search stays precise. Matches are highlighted in the open email (the text, and the matching picture) and it scrolls to the first hit.
 - **OCR** (automatic): text inside images is read in the background and made searchable, covering both image attachments and pictures embedded in the email body. Images are sharpened first to read small text more reliably, and results are cached on your device for faster re-opens (cleared 7 days after a mailbox was last opened). Engine and model are bundled for full offline use.
 - **Export**: save a single email as **PDF** or as its original **`.eml`** (preserving the real headers and attachments), or merge several emails into one PDF (oldest-first or newest-first).
@@ -62,6 +62,7 @@ React + Vite + TypeScript + Tailwind. PST parsing via [`@hiraokahypertools/pst-e
 ## Known limitations
 
 - **PowerPoint (`.pptx`/`.ppt`)** and **OpenDocument text (`.odt`)** attachments are download-only (no reliable in-browser renderer).
+- **Encrypted S/MIME** messages can't be read without the recipient's private key (signed S/MIME is decoded and shown).
 - Corrupt mailboxes show a clear per-source error; other loaded mailboxes keep working.
 - Search becomes available for a mailbox once its background indexing finishes (a progress indicator is shown).
 - **Text inside images can be misread by OCR**, especially when it is very small or low-contrast. It also becomes searchable a little after the rest of a mailbox, since it is read in the background (a "Reading images" progress indicator shows while it runs).
