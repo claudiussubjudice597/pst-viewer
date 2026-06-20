@@ -3,6 +3,7 @@ import * as Comlink from 'comlink'
 import { pst } from '../worker/client'
 import { scanZipForPsts } from '../lib/zip'
 import { buildPrintDocument, printHtmlDocument } from '../lib/printExport'
+import { buildEml, downloadBlob, emlFilename, type EmlAttachment } from '../lib/emlExport'
 import { getCachedOcr, putCachedOcr, hashImageBytes } from '../lib/ocrCache'
 import type { Worker as OcrWorker } from 'tesseract.js'
 import type { FolderNode, MessageContent, MessageMeta, OcrTarget, SearchHit, SourceIndex } from '../types'
@@ -68,6 +69,7 @@ interface AppState {
   clearExport: () => void
   exportSelected: (direction?: 'asc' | 'desc') => void
   exportSingle: (sourceId: string, messageId: string) => void
+  exportEml: (sourceId: string, messageId: string) => void
 }
 
 let counter = 0
@@ -547,6 +549,31 @@ export const useApp = create<AppState>((set, get) => {
         .getMessageContent(sourceId, messageId)
         .then((content) => {
           if (content) printHtmlDocument(buildPrintDocument([content]))
+        })
+        .finally(() => {
+          clearTimeout(safety)
+          set({ exporting: false })
+        })
+    },
+
+    exportEml: (sourceId, messageId) => {
+      if (get().exporting) return
+      set({ exporting: true })
+      const safety = setTimeout(() => set({ exporting: false }), 30000)
+      pst
+        .getMessageContent(sourceId, messageId)
+        .then(async (content) => {
+          if (!content) return
+          const files: EmlAttachment[] = []
+          for (const a of content.attachments) {
+            if (a.isInline || a.isEmbeddedMessage) continue
+            const d = await pst.getAttachmentData(sourceId, messageId, a.index)
+            if (d) files.push({ name: a.name || d.name, mime: a.mime || d.mime, data: d.data })
+          }
+          downloadBlob(
+            new Blob([buildEml(content, files)], { type: 'message/rfc822' }),
+            emlFilename(content),
+          )
         })
         .finally(() => {
           clearTimeout(safety)

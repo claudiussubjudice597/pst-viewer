@@ -11,7 +11,7 @@ import { ImageLightbox } from './ImageLightbox'
 import { AttachmentBar } from './attachments/AttachmentBar'
 import { HeadersDialog } from './HeadersDialog'
 import { AppointmentCardView, ContactCardView } from './ItemCard'
-import { Code, Printer } from './icons'
+import { Code, Download, Printer } from './icons'
 
 export function MessageView({
   sourceId,
@@ -85,6 +85,7 @@ export function MessageView({
   // Hide only inline *images* (they render inside the body); everything else,
   // including inline PDFs, stays visible as a downloadable/previewable chip.
   const exportSingle = useApp((s) => s.exportSingle)
+  const exportEml = useApp((s) => s.exportEml)
   const exporting = useApp((s) => s.exporting)
   const exportSelectionActive = useApp((s) => Object.keys(s.exportSel).length > 0)
 
@@ -118,6 +119,16 @@ export function MessageView({
                 data-tip="Save this email as PDF"
               >
                 <Printer className="h-4 w-4" /> PDF
+              </button>
+            )}
+            {content.itemKind === 'email' && !exportSelectionActive && (
+              <button
+                onClick={() => exportEml(sourceId, messageId)}
+                disabled={exporting}
+                className="flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-800/60 px-2.5 py-1.5 text-xs font-medium text-slate-200 transition hover:bg-slate-700/60 disabled:opacity-60"
+                data-tip="Save the original email as a .eml file"
+              >
+                <Download className="h-4 w-4" /> EML
               </button>
             )}
           </div>
