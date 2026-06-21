@@ -253,79 +253,56 @@ function SourceTree({ source }: { source: Source }) {
             Reading images… {source.ocrProgress.done}/{source.ocrProgress.total}
           </p>
         )}
-      {source.status === 'ready' &&
-        source.index &&
-        (() => {
-          const children = sortFolders(source.index.rootFolder.children)
-          const gutter = children.some((c) => c.children.length > 0)
-          return (
-            <ul className="ml-5">
-              {children.map((child) => (
-                <FolderRow
-                  key={child.id}
-                  sourceId={source.id}
-                  node={child}
-                  depth={0}
-                  gutter={gutter}
-                />
-              ))}
-            </ul>
-          )
-        })()}
+      {source.status === 'ready' && source.index && (
+        <ul className="ml-5">
+          {sortFolders(source.index.rootFolder.children).map((child) => (
+            <FolderRow key={child.id} sourceId={source.id} node={child} depth={0} />
+          ))}
+        </ul>
+      )}
     </div>
   )
 }
 
-function FolderRow({
-  sourceId,
-  node,
-  depth,
-  gutter,
-}: {
-  sourceId: string
-  node: FolderNode
-  depth: number
-  gutter: boolean
-}) {
+function FolderRow({ sourceId, node, depth }: { sourceId: string; node: FolderNode; depth: number }) {
   const expanded = useApp((s) => s.expanded[`${sourceId}:${node.id}`] ?? false)
   const selected = useApp(
     (s) => s.selection.sourceId === sourceId && s.selection.folderId === node.id,
   )
   const toggleFolder = useApp((s) => s.toggleFolder)
   const selectFolder = useApp((s) => s.selectFolder)
-  const hasChildren = node.children.length > 0
-  const Icon = folderIcon(node)
   const childNodes = sortFolders(node.children)
-  const childGutter = childNodes.some((c) => c.children.length > 0)
+  const hasChildren = childNodes.length > 0
+  const Icon = folderIcon(node)
 
   return (
     <li>
       <div
         onClick={() => selectFolder(sourceId, node.id)}
-        className={`flex cursor-pointer items-center gap-1 rounded-r-md border-l-2 py-1 pr-2 text-sm transition ${
+        className={`flex cursor-pointer items-center gap-1.5 rounded-r-md border-l-2 py-1 pr-2 text-sm transition ${
           selected
             ? 'border-l-sky-400 bg-sky-500/15 font-medium text-sky-100'
             : 'border-l-slate-700/60 text-slate-300 hover:bg-slate-800/60'
         }`}
         style={{ paddingLeft: depth * 14 + 6 }}
       >
-        {gutter &&
-          (hasChildren ? (
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                toggleFolder(sourceId, node.id)
-              }}
-              className="shrink-0 rounded p-0.5 text-slate-400 hover:text-slate-200"
-            >
-              <Caret
-                className={`h-3.5 w-3.5 transition-transform ${expanded ? 'rotate-90' : ''}`}
-              />
-            </button>
-          ) : (
-            <span className="w-[18px] shrink-0" />
-          ))}
-        <Icon className={`h-4 w-4 shrink-0 ${selected ? 'text-sky-300' : 'text-slate-400'}`} />
+        {/* Expandable folders show a collapse/expand chevron in place of the
+            folder icon; leaf folders show their type icon. Same width either
+            way so names line up, and no separate gutter pushing rows in. */}
+        {hasChildren ? (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleFolder(sourceId, node.id)
+            }}
+            className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-slate-400 hover:text-slate-200"
+            data-tip={expanded ? 'Collapse' : 'Expand'}
+          >
+            <Caret className={`h-3.5 w-3.5 transition-transform ${expanded ? 'rotate-90' : ''}`} />
+          </button>
+        ) : (
+          <Icon className={`h-4 w-4 shrink-0 ${selected ? 'text-sky-300' : 'text-slate-400'}`} />
+        )}
         <span className="min-w-0 flex-1 truncate" data-tip={node.name}>
           {node.name}
         </span>
@@ -339,13 +316,7 @@ function FolderRow({
       {expanded && hasChildren && (
         <ul>
           {childNodes.map((child) => (
-            <FolderRow
-              key={child.id}
-              sourceId={sourceId}
-              node={child}
-              depth={depth + 1}
-              gutter={childGutter}
-            />
+            <FolderRow key={child.id} sourceId={sourceId} node={child} depth={depth + 1} />
           ))}
         </ul>
       )}

@@ -143,60 +143,41 @@ await page.evaluate(() => {
 await page.waitForTimeout(700)
 await shot('search.png')
 
-// 4) Contacts view (synthetic) — shows that non-email Outlook items (contacts,
-// calendar, tasks, ...) render as their own cards, not just mail.
-await page.evaluate(() => {
-  const t = (s) => new Date(s).getTime()
-  const c = (id, name, title, email) => ({
-    id, folderId: 'contacts', subject: `${title}, Acme Corp`, fromName: name, fromEmail: email,
-    to: '', date: null, hasAttachments: false, isRead: true, messageClass: 'IPM.Contact', size: 0,
-  })
-  const messages = [
-    c('c1', 'Priya Nair', 'Finance Director', 'priya.nair@acme.example'),
-    c('c2', 'Sam Lee', 'Product Designer', 'sam.lee@acme.example'),
-    c('c3', 'Alex Morgan', 'Account Manager', 'alex.morgan@acme.example'),
-    c('c4', 'Dana Cole', 'Marketing Lead', 'dana.cole@acme.example'),
-    c('c5', 'Riley Quinn', 'IT Support', 'riley.quinn@acme.example'),
-    c('c6', 'Morgan Patel', 'People Team', 'morgan.patel@acme.example'),
-    c('c7', 'Chris Doyle', 'Sales Executive', 'chris.doyle@acme.example'),
-  ]
-  const content = {
-    itemKind: 'contact',
-    subject: 'Priya Nair', fromName: '', fromEmail: '', to: [], cc: [], bcc: [],
-    date: null, html: null,
-    text: 'Primary contact for Q3 budget planning. Prefers email over phone.',
-    inlineImages: [], attachments: [], headers: '',
-    categories: [], importance: null, sensitivity: null, followUp: null,
-    contact: {
-      fullName: 'Priya Nair',
-      emails: [
-        { label: 'Email', address: 'priya.nair@acme.example' },
-        { label: 'Email 2', address: 'priya.nair@outlook.example' },
-      ],
-      phones: [
-        { label: 'Business', value: '+1 (415) 555-0142' },
-        { label: 'Mobile', value: '+1 (415) 555-0199' },
-      ],
-      company: 'Acme Corp',
-      jobTitle: 'Finance Director',
-      department: 'Finance',
-      addresses: [
-        { label: 'Work', value: '500 Market Street, Suite 400\nSan Francisco, CA 94105' },
-      ],
-      website: 'www.acme.example',
-      im: 'priya.nair',
-      birthday: t('1986-03-12T00:00'),
-    },
-  }
-  window.__app.setState({
-    searchQuery: '', searchResults: [],
-    expanded: { 'demo:root': true, 'demo:projects': true },
-    selection: { sourceId: 'demo', folderId: 'contacts', messageId: 'c1' },
-    messages, messagesLoading: false, messageContent: content, contentLoading: false,
-  })
+// 4) Attachment preview (real, benign sample PDF from the bundled test OST).
+// Copy fixtures/pstextractortestpdf@outlook.com.ost to public/test-pdf.ost first.
+await page.evaluate(async () => {
+  const app = window.__app
+  app.getState().setSearchQuery('')
+  app.getState().clearSources()
+  const r = await fetch('/test-pdf.ost')
+  const b = await r.arrayBuffer()
+  app.getState().addFiles([new File([b], 'test-pdf.ost')])
 })
-await page.waitForTimeout(700)
-await shot('contacts.png')
+await page.waitForFunction(() => window.__app.getState().sources[0]?.status === 'ready', {
+  timeout: 60000,
+})
+await page.evaluate(async () => {
+  const app = window.__app
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms))
+  const src = app.getState().sources[0]
+  let inbox = null
+  const walk = (n) => {
+    if (/inbox/i.test(n.name)) inbox = n.id
+    n.children.forEach(walk)
+  }
+  walk(src.index.rootFolder)
+  app.getState().selectFolder(src.id, inbox)
+  for (let i = 0; i < 60 && app.getState().messagesLoading; i++) await wait(80)
+  const m =
+    app.getState().messages.find((x) => /single PDF/i.test(x.subject)) || app.getState().messages[0]
+  app.getState().selectMessage(m.id)
+  for (let i = 0; i < 40 && app.getState().contentLoading; i++) await wait(60)
+})
+await page.waitForTimeout(300)
+await page.click('button[data-tip$=".pdf"]').catch(() => {})
+await page.waitForSelector('canvas', { timeout: 30000 }).catch(() => {})
+await page.waitForTimeout(1800)
+await shot('preview.png')
 
 await browser.close()
 console.log('Wrote screenshots to ./screenshots')

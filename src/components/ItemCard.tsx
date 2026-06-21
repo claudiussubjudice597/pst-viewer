@@ -30,7 +30,8 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
   )
 }
 
-/** A contact item (IPM.Contact) shown as a card, with its note if present. */
+/** A contact item (IPM.Contact) laid out in the content area, with its note if
+ *  present. The contact's name is shown once, by the view header above. */
 export function ContactCardView({
   contact,
   notes,
@@ -40,53 +41,48 @@ export function ContactCardView({
 }) {
   const subtitle = [contact.jobTitle, contact.company].filter(Boolean).join(', ')
   return (
-    <div className="mx-auto max-w-2xl p-6">
-      <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-6">
-        <h2 className="text-xl font-semibold text-slate-100">
-          {contact.fullName || '(unnamed contact)'}
-        </h2>
-        {subtitle && <p className="mt-1 text-sm text-slate-400">{subtitle}</p>}
-        <div className="mt-4 divide-y divide-slate-800/70">
-          {contact.emails.map((e, i) => (
-            <Row key={`e${i}`} label={i === 0 ? 'Email' : e.label}>
-              <a href={`mailto:${e.address}`} className="text-sky-400 hover:underline">
-                {e.address}
-              </a>
-            </Row>
-          ))}
-          {contact.phones.map((p, i) => (
-            <Row key={`p${i}`} label={p.label}>
-              {p.value}
-            </Row>
-          ))}
-          {contact.im && <Row label="IM">{contact.im}</Row>}
-          {contact.department && <Row label="Department">{contact.department}</Row>}
-          {contact.addresses.map((a, i) => (
-            <Row key={`a${i}`} label={`${a.label} address`}>
-              <span className="whitespace-pre-wrap">{a.value}</span>
-            </Row>
-          ))}
-          {contact.website && (
-            <Row label="Website">
-              <a
-                href={withProtocol(contact.website)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sky-400 hover:underline"
-              >
-                {contact.website}
-              </a>
-            </Row>
-          )}
-          {contact.birthday != null && <Row label="Birthday">{dateOnly(contact.birthday)}</Row>}
-        </div>
-        {notes && notes.trim() && (
-          <div className="mt-4 border-t border-slate-800/70 pt-3">
-            <div className="mb-1 text-xs uppercase tracking-wide text-slate-500">Notes</div>
-            <p className="whitespace-pre-wrap text-sm text-slate-300">{notes}</p>
-          </div>
+    <div className="px-6 py-5">
+      {subtitle && <p className="text-sm text-slate-400">{subtitle}</p>}
+      <div className="mt-2 max-w-3xl divide-y divide-slate-800/70">
+        {contact.emails.map((e, i) => (
+          <Row key={`e${i}`} label={i === 0 ? 'Email' : e.label}>
+            <a href={`mailto:${e.address}`} className="text-sky-400 hover:underline">
+              {e.address}
+            </a>
+          </Row>
+        ))}
+        {contact.phones.map((p, i) => (
+          <Row key={`p${i}`} label={p.label}>
+            {p.value}
+          </Row>
+        ))}
+        {contact.im && <Row label="IM">{contact.im}</Row>}
+        {contact.department && <Row label="Department">{contact.department}</Row>}
+        {contact.addresses.map((a, i) => (
+          <Row key={`a${i}`} label={`${a.label} address`}>
+            <span className="whitespace-pre-wrap">{a.value}</span>
+          </Row>
+        ))}
+        {contact.website && (
+          <Row label="Website">
+            <a
+              href={withProtocol(contact.website)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sky-400 hover:underline"
+            >
+              {contact.website}
+            </a>
+          </Row>
         )}
+        {contact.birthday != null && <Row label="Birthday">{dateOnly(contact.birthday)}</Row>}
       </div>
+      {notes && notes.trim() && (
+        <div className="mt-5 max-w-3xl border-t border-slate-800/70 pt-3">
+          <div className="mb-1 text-xs uppercase tracking-wide text-slate-500">Notes</div>
+          <p className="whitespace-pre-wrap text-sm text-slate-300">{notes}</p>
+        </div>
+      )}
     </div>
   )
 }
@@ -112,7 +108,8 @@ export function AppointmentCardView({ appointment }: { appointment: AppointmentC
   )
 }
 
-/** A distribution list / contact group (IPM.DistList) shown as a card. */
+/** A distribution list / contact group (IPM.DistList) laid out in the content
+ *  area. The list's name is shown once, by the view header above. */
 export function DistListCardView({
   distlist,
   notes,
@@ -122,35 +119,30 @@ export function DistListCardView({
 }) {
   const n = distlist.members.length
   return (
-    <div className="mx-auto max-w-2xl p-6">
-      <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-6">
-        <h2 className="text-xl font-semibold text-slate-100">
-          {distlist.name || '(unnamed group)'}
-        </h2>
-        <p className="mt-1 text-sm text-slate-400">
-          Distribution list{n > 0 ? `, ${n} member${n === 1 ? '' : 's'}` : ''}
-        </p>
-        {n > 0 && (
-          <ul className="mt-4 divide-y divide-slate-800/70">
-            {distlist.members.map((mem, i) => (
-              <li key={i} className="flex flex-col py-2">
-                {mem.name && <span className="text-sm text-slate-200">{mem.name}</span>}
-                {mem.email && (
-                  <a href={`mailto:${mem.email}`} className="text-sm text-sky-400 hover:underline">
-                    {mem.email}
-                  </a>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-        {notes && notes.trim() && (
-          <div className="mt-4 border-t border-slate-800/70 pt-3">
-            <div className="mb-1 text-xs uppercase tracking-wide text-slate-500">Notes</div>
-            <p className="whitespace-pre-wrap text-sm text-slate-300">{notes}</p>
-          </div>
-        )}
-      </div>
+    <div className="px-6 py-5">
+      <p className="text-sm text-slate-400">
+        Distribution list{n > 0 ? `, ${n} member${n === 1 ? '' : 's'}` : ''}
+      </p>
+      {n > 0 && (
+        <ul className="mt-2 max-w-3xl divide-y divide-slate-800/70">
+          {distlist.members.map((mem, i) => (
+            <li key={i} className="flex flex-col py-2">
+              {mem.name && <span className="text-sm text-slate-200">{mem.name}</span>}
+              {mem.email && (
+                <a href={`mailto:${mem.email}`} className="text-sm text-sky-400 hover:underline">
+                  {mem.email}
+                </a>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {notes && notes.trim() && (
+        <div className="mt-5 max-w-3xl border-t border-slate-800/70 pt-3">
+          <div className="mb-1 text-xs uppercase tracking-wide text-slate-500">Notes</div>
+          <p className="whitespace-pre-wrap text-sm text-slate-300">{notes}</p>
+        </div>
+      )}
     </div>
   )
 }

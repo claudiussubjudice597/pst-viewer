@@ -894,6 +894,12 @@ async function buildMessageContent(
   const finalHtml = bodies.html || smimeBody?.html || null
   const finalText = bodies.text || tnefBody || smimeBody?.text || smimeNote || null
 
+  // Build the contact / dist-list cards up front so the view title can fall back
+  // to their name (contacts often have no PR_SUBJECT), and the card body need not
+  // repeat the name the header already shows.
+  const contactCard = kind === 'contact' ? buildContactCard(m) : undefined
+  const distlistCard = kind === 'distlist' ? buildDistListCard(m) : undefined
+
   return {
     itemKind: kind,
     categories: safe(() => m.colorCategories, [])
@@ -909,7 +915,8 @@ async function buildMessageContent(
             ? 'confidential'
             : null,
     followUp: flagVal === 2 ? 'flagged' : flagVal === 1 ? 'complete' : null,
-    subject: safe(() => m.subject, '') || '(no subject)',
+    subject:
+      safe(() => m.subject, '') || contactCard?.fullName || distlistCard?.name || '(no subject)',
     fromName: safe(() => m.senderName, '') || safe(() => m.sentRepresentingName, ''),
     fromEmail:
       safe(() => m.senderEmailAddress, '') || safe(() => m.sentRepresentingEmailAddress, ''),
@@ -922,9 +929,9 @@ async function buildMessageContent(
     inlineImages,
     attachments,
     headers: safe(() => m.transportMessageHeaders, ''),
-    contact: kind === 'contact' ? buildContactCard(m) : undefined,
+    contact: contactCard,
     appointment: kind === 'appointment' ? buildAppointmentCard(m) : undefined,
-    distlist: kind === 'distlist' ? buildDistListCard(m) : undefined,
+    distlist: distlistCard,
     task: kind === 'task' ? buildTaskCard(m) : undefined,
     journal: kind === 'journal' ? buildJournalCard(m) : undefined,
   }
