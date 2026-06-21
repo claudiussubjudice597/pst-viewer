@@ -1,13 +1,12 @@
 // One-off: capture 1920x1080 showcase screenshots into ./screenshots.
 //
-// Prerequisites (Playwright is not a project dependency):
+// Prerequisites:
 //   npm i -D playwright && npx playwright install chromium chromium-headless-shell
 //   npm run dev            # dev server must be running on http://localhost:5173
 //   node scripts/screenshots.mjs
 //
-// Main views use curated synthetic data (no real personal info); the
-// attachment-preview shot uses the bundled, benign sample PDF (place a sample
-// .ost at public/test-pdf.ost first, or adjust the fetch path below).
+// Every view uses curated synthetic data (no real personal info); window.__app
+// is exposed only in the dev build, which is why the dev server is required.
 import { chromium } from 'playwright'
 import { mkdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -29,7 +28,9 @@ await page.evaluate(() => window.__app.getState().clearSources())
 await page.waitForTimeout(400)
 await shot('landing.png')
 
-// 2) Reading view (synthetic "Acme Corp" mailbox)
+// 2) Reading view (synthetic "Acme Corp" mailbox).
+// The folder set spans mail, calendar and contacts so the nav shows the
+// type-specific icons, the Outlook folder order and the selection rail.
 await page.evaluate(() => {
   const t = (s) => new Date(s).getTime()
   const src = {
@@ -45,6 +46,8 @@ await page.evaluate(() => {
             { id: 'phoenix', name: 'Project Phoenix', containerClass: 'IPF.Note', messageCount: 6, children: [] },
           ] },
           { id: 'archive', name: 'Archive', containerClass: 'IPF.Note', messageCount: 34, children: [] },
+          { id: 'calendar', name: 'Calendar', containerClass: 'IPF.Appointment', messageCount: 18, children: [] },
+          { id: 'contacts', name: 'Contacts', containerClass: 'IPF.Contact', messageCount: 23, children: [] },
         ],
       },
     },
@@ -79,6 +82,7 @@ await page.evaluate(() => {
     '<p>Full plan is in the attached PDF. Shout if anything looks off.</p>' +
     '<p>Best,<br>Sam</p></body></html>'
   const content = {
+    itemKind: 'email',
     subject: 'Project Phoenix kickoff notes', fromName: 'Sam Lee', fromEmail: 'sam.lee@acme.example',
     to: [{ name: 'Jordan Reed', email: 'jordan.reed@acme.example' }],
     cc: [{ name: 'Priya Nair', email: 'priya.nair@acme.example' }], bcc: [],
@@ -87,7 +91,7 @@ await page.evaluate(() => {
       { index: 0, name: 'Phoenix-plan.pdf', size: 284000, mime: 'application/pdf', isInline: false, isEmbeddedMessage: false },
       { index: 1, name: 'budget.xlsx', size: 18000, mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', isInline: false, isEmbeddedMessage: false },
     ],
-    headers: '',
+    headers: '', categories: [], importance: null, sensitivity: null, followUp: null,
   }
   window.__app.setState({
     sources: [src],
@@ -118,6 +122,7 @@ await page.evaluate(() => {
     hit('r3', 'sent', 'Budget questions for finance', 'Jordan Reed', '2026-05-12T17:22', false),
   ]
   const content = {
+    itemKind: 'email',
     subject: 'Q3 report draft for review', fromName: 'Priya Nair', fromEmail: 'priya.nair@acme.example',
     to: [{ name: 'Jordan Reed', email: 'jordan.reed@acme.example' }], cc: [], bcc: [],
     date: t('2026-06-14T16:05'),
@@ -127,7 +132,7 @@ await page.evaluate(() => {
       '<p>Thanks,<br>Priya</p></body></html>',
     text: null, inlineImages: [],
     attachments: [{ index: 0, name: 'Q3-report.pdf', size: 512000, mime: 'application/pdf', isInline: false, isEmbeddedMessage: false }],
-    headers: '',
+    headers: '', categories: [], importance: null, sensitivity: null, followUp: null,
   }
   window.__app.setState({
     searchQuery: 'budget', searchResults,
@@ -138,34 +143,60 @@ await page.evaluate(() => {
 await page.waitForTimeout(700)
 await shot('search.png')
 
-// 4) Attachment preview (real, benign sample PDF from the test OST)
-await page.evaluate(async () => {
-  const app = window.__app
-  app.getState().setSearchQuery('')
-  app.getState().clearSources()
-  const r = await fetch('/test-pdf.ost')
-  const b = await r.arrayBuffer()
-  app.getState().addFiles([new File([b], 'test-pdf.ost')])
+// 4) Contacts view (synthetic) — shows that non-email Outlook items (contacts,
+// calendar, tasks, ...) render as their own cards, not just mail.
+await page.evaluate(() => {
+  const t = (s) => new Date(s).getTime()
+  const c = (id, name, title, email) => ({
+    id, folderId: 'contacts', subject: `${title}, Acme Corp`, fromName: name, fromEmail: email,
+    to: '', date: null, hasAttachments: false, isRead: true, messageClass: 'IPM.Contact', size: 0,
+  })
+  const messages = [
+    c('c1', 'Priya Nair', 'Finance Director', 'priya.nair@acme.example'),
+    c('c2', 'Sam Lee', 'Product Designer', 'sam.lee@acme.example'),
+    c('c3', 'Alex Morgan', 'Account Manager', 'alex.morgan@acme.example'),
+    c('c4', 'Dana Cole', 'Marketing Lead', 'dana.cole@acme.example'),
+    c('c5', 'Riley Quinn', 'IT Support', 'riley.quinn@acme.example'),
+    c('c6', 'Morgan Patel', 'People Team', 'morgan.patel@acme.example'),
+    c('c7', 'Chris Doyle', 'Sales Executive', 'chris.doyle@acme.example'),
+  ]
+  const content = {
+    itemKind: 'contact',
+    subject: 'Priya Nair', fromName: '', fromEmail: '', to: [], cc: [], bcc: [],
+    date: null, html: null,
+    text: 'Primary contact for Q3 budget planning. Prefers email over phone.',
+    inlineImages: [], attachments: [], headers: '',
+    categories: [], importance: null, sensitivity: null, followUp: null,
+    contact: {
+      fullName: 'Priya Nair',
+      emails: [
+        { label: 'Email', address: 'priya.nair@acme.example' },
+        { label: 'Email 2', address: 'priya.nair@outlook.example' },
+      ],
+      phones: [
+        { label: 'Business', value: '+1 (415) 555-0142' },
+        { label: 'Mobile', value: '+1 (415) 555-0199' },
+      ],
+      company: 'Acme Corp',
+      jobTitle: 'Finance Director',
+      department: 'Finance',
+      addresses: [
+        { label: 'Work', value: '500 Market Street, Suite 400\nSan Francisco, CA 94105' },
+      ],
+      website: 'www.acme.example',
+      im: 'priya.nair',
+      birthday: t('1986-03-12T00:00'),
+    },
+  }
+  window.__app.setState({
+    searchQuery: '', searchResults: [],
+    expanded: { 'demo:root': true, 'demo:projects': true },
+    selection: { sourceId: 'demo', folderId: 'contacts', messageId: 'c1' },
+    messages, messagesLoading: false, messageContent: content, contentLoading: false,
+  })
 })
-await page.waitForFunction(() => window.__app.getState().sources[0]?.status === 'ready', { timeout: 60000 })
-await page.evaluate(async () => {
-  const app = window.__app
-  const wait = (ms) => new Promise((r) => setTimeout(r, ms))
-  const src = app.getState().sources[0]
-  let inbox = null
-  const walk = (n) => { if (/inbox/i.test(n.name)) inbox = n.id; n.children.forEach(walk) }
-  walk(src.index.rootFolder)
-  app.getState().selectFolder(src.id, inbox)
-  for (let i = 0; i < 60 && app.getState().messagesLoading; i++) await wait(80)
-  const m = app.getState().messages.find((x) => /single PDF/i.test(x.subject)) || app.getState().messages[0]
-  app.getState().selectMessage(m.id)
-  for (let i = 0; i < 40 && app.getState().contentLoading; i++) await wait(60)
-})
-await page.waitForTimeout(300)
-await page.click('button[data-tip$=".pdf"]').catch(() => {})
-await page.waitForSelector('canvas', { timeout: 30000 }).catch(() => {})
-await page.waitForTimeout(1800)
-await shot('preview.png')
+await page.waitForTimeout(700)
+await shot('contacts.png')
 
 await browser.close()
 console.log('Wrote screenshots to ./screenshots')

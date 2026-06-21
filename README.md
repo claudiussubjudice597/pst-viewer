@@ -14,8 +14,8 @@ No setup needed. Open the link, drop in a `.pst`, `.ost`, or `.zip`, and start r
 
 | | |
 | --- | --- |
-| ![Read email 1:1 with attachments](screenshots/mailbox.png) | ![Search across all mailboxes](screenshots/search.png) |
-| ![Preview attachments inline](screenshots/preview.png) | ![Open any mailbox](screenshots/landing.png) |
+| ![Read email with attachments](screenshots/mailbox.png) | ![Search every mailbox at once](screenshots/search.png) |
+| ![Contacts, calendar and tasks, not just email](screenshots/contacts.png) | ![Drop in a PST, OST or ZIP to open it](screenshots/landing.png) |
 
 *(Sample data shown is fictional.)*
 
