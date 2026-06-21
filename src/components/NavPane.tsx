@@ -49,6 +49,53 @@ function folderIcon(node: FolderNode) {
   return FolderIcon
 }
 
+/** Sort rank for a folder, following Outlook's canonical order: the standard
+ *  mail folders first (Inbox at the top), then the user's own folders, then the
+ *  calendar/contacts/tasks/notes/journal folders last. Lower sorts first. */
+function folderRank(node: FolderNode): number {
+  const name = node.name.trim().toLowerCase()
+  const cls = (node.containerClass || '').toLowerCase()
+
+  const byName: Record<string, number> = {
+    inbox: 0,
+    drafts: 1,
+    draft: 1,
+    'sent items': 2,
+    sent: 2,
+    'sent mail': 2,
+    'deleted items': 3,
+    deleted: 3,
+    trash: 3,
+    'junk email': 4,
+    'junk e-mail': 4,
+    junk: 4,
+    spam: 4,
+    outbox: 5,
+    'rss feeds': 6,
+    'rss subscriptions': 6,
+    archive: 7,
+    'conversation history': 8,
+  }
+  if (name in byName) return byName[name]
+
+  if (cls.startsWith('ipf.appointment') || name === 'calendar') return 90
+  if (cls.startsWith('ipf.contact') || name === 'contacts') return 91
+  if (cls.startsWith('ipf.task') || name === 'tasks') return 92
+  if (cls.startsWith('ipf.stickynote') || name === 'notes') return 93
+  if (cls.startsWith('ipf.journal') || name === 'journal') return 94
+
+  return 50 // the user's own folders, between the standard mail and PIM folders
+}
+
+/** Order folders by rank, breaking ties alphabetically. */
+function sortFolders(nodes: FolderNode[]): FolderNode[] {
+  return [...nodes].sort(
+    (a, b) =>
+      folderRank(a) - folderRank(b) ||
+      a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }),
+  )
+}
+
 export function NavPane() {
   const sources = useApp((s) => s.sources)
   const [mailboxesOpen, setMailboxesOpen] = useState(true)
@@ -204,7 +251,7 @@ function SourceTree({ source }: { source: Source }) {
         )}
       {source.status === 'ready' && source.index && (
         <ul>
-          {source.index.rootFolder.children.map((child) => (
+          {sortFolders(source.index.rootFolder.children).map((child) => (
             <FolderRow key={child.id} sourceId={source.id} node={child} depth={0} />
           ))}
         </ul>
@@ -268,7 +315,7 @@ function FolderRow({
 
       {expanded && hasChildren && (
         <ul>
-          {node.children.map((child) => (
+          {sortFolders(node.children).map((child) => (
             <FolderRow key={child.id} sourceId={sourceId} node={child} depth={depth + 1} />
           ))}
         </ul>
