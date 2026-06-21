@@ -93,7 +93,13 @@ const MessageRow = memo(function MessageRow({
   onSelect: (messageId: string) => void
   onToggleExport: (sourceId: string, messageId: string) => void
 }) {
-  const from = message.fromName || message.fromEmail || '(unknown sender)'
+  // Contacts and distribution lists have no real sender; their name lives in the
+  // subject, so show that in bold rather than an internal owner field.
+  const isCardItem = /^IPM\.(Contact|DistList)/i.test(message.messageClass || '')
+  const primary = isCardItem
+    ? message.subject || '(no name)'
+    : message.fromName || message.fromEmail || '(unknown sender)'
+  const secondary = isCardItem ? '' : message.subject
   return (
     <div
       className={`flex h-full w-full items-stretch border-b border-b-slate-800/70 border-l-2 transition ${
@@ -119,18 +125,22 @@ const MessageRow = memo(function MessageRow({
             className={`min-w-0 flex-1 truncate text-sm ${
               message.isRead ? 'text-slate-300' : 'font-semibold text-slate-100'
             }`}
-            data-tip={message.fromEmail || from}
+            data-tip={isCardItem ? primary : message.fromEmail || primary}
           >
-            {from}
+            {primary}
           </span>
           {message.hasAttachments && <Paperclip className="h-3.5 w-3.5 shrink-0 text-slate-400" />}
-          <span className="shrink-0 text-[11px] tabular-nums text-slate-400">
-            {formatDateShort(message.date)}
-          </span>
+          {!isCardItem && (
+            <span className="shrink-0 text-[11px] tabular-nums text-slate-400">
+              {formatDateShort(message.date)}
+            </span>
+          )}
         </div>
-        <div className="truncate text-[13px] text-slate-400" data-tip={message.subject}>
-          {message.subject}
-        </div>
+        {secondary && (
+          <div className="truncate text-[13px] text-slate-400" data-tip={secondary}>
+            {secondary}
+          </div>
+        )}
       </button>
     </div>
   )

@@ -188,20 +188,13 @@ function toMeta(m: IPSTMessage, folderId: string): MessageMeta {
   }
 }
 
-// Internal Outlook containers that hold no readable user mail; hidden from the tree.
-const SYSTEM_FOLDERS = new Set([
-  'search root',
-  'spooler queue',
-  'ipm_views',
-  'ipm_common_views',
-  'deferred action',
-  'deferred action folder',
-  'finder',
-  'freebusy data',
-  'schedule+ ems interpersonal',
-])
-const isSystemFolder = (name: string): boolean =>
-  SYSTEM_FOLDERS.has((name || '').trim().toLowerCase())
+// Outlook marks its internal/system folders (Sync Issues, Conversation Action
+// Settings, etc.) with PR_ATTR_HIDDEN. Skipping hidden folders drops them from
+// the tree regardless of their (possibly localized) display names.
+function isHiddenFolder(folder: IPSTFolder): boolean {
+  const v = safe(() => folder.getProperty(0x10f4)?.value, false)
+  return v === true || v === 1
+}
 
 async function buildFolderTree(folder: IPSTFolder, entry: SourceEntry): Promise<FolderNode> {
   const id = String(folder.primaryNodeId)
@@ -209,7 +202,7 @@ async function buildFolderTree(folder: IPSTFolder, entry: SourceEntry): Promise<
   const subs = await safeAsync(() => folder.getSubFolders(), [] as IPSTFolder[])
   const children: FolderNode[] = []
   for (const sub of subs) {
-    if (isSystemFolder(safe(() => sub.displayName, ''))) continue
+    if (isHiddenFolder(sub)) continue
     children.push(await buildFolderTree(sub, entry))
   }
   return {
@@ -959,8 +952,19 @@ const api = {
     }
     sources.set(sourceId, entry)
 
-    const root = await pstFile.getRootFolder()
-    const rootNode = liftRootContainer(await buildFolderTree(root, entry))
+    // Start from the IPM subtree ("Top of Personal Folders"), the user's real
+    // mailbox root. Internal containers like Search Root are siblings of it under
+    // the true root, so starting here drops them in any language. Fall back to the
+    // raw root (lifting the localized top container) only if the subtree is absent.
+    let top: IPSTFolder | null = null
+    try {
+      top = await pstFile.getTopOfOutlookDataFile()
+    } catch {
+      top = null
+    }
+    const rootNode = top
+      ? await buildFolderTree(top, entry)
+      : liftRootContainer(await buildFolderTree(await pstFile.getRootFolder(), entry))
 
     let totalMessages = 0
     const sum = (n: FolderNode) => {
