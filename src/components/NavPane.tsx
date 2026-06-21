@@ -259,7 +259,7 @@ function SourceTree({ source }: { source: Source }) {
           const children = sortFolders(source.index.rootFolder.children)
           const gutter = children.some((c) => c.children.length > 0)
           return (
-            <ul className="ml-5 space-y-px border-l border-slate-700/60 pl-1.5">
+            <ul className="ml-5">
               {children.map((child) => (
                 <FolderRow
                   key={child.id}
@@ -302,12 +302,12 @@ function FolderRow({
     <li>
       <div
         onClick={() => selectFolder(sourceId, node.id)}
-        className={`flex cursor-pointer items-center gap-1 rounded-md py-1 pr-2 text-sm transition ${
+        className={`flex cursor-pointer items-center gap-1 rounded-r-md border-l-2 py-1 pr-2 text-sm transition ${
           selected
-            ? 'bg-sky-500/15 font-medium text-sky-100'
-            : 'text-slate-300 hover:bg-slate-800/60'
+            ? 'border-l-sky-400 bg-sky-500/15 font-medium text-sky-100'
+            : 'border-l-slate-700/60 text-slate-300 hover:bg-slate-800/60'
         }`}
-        style={{ paddingLeft: depth * 14 + 2 }}
+        style={{ paddingLeft: depth * 14 + 6 }}
       >
         {gutter &&
           (hasChildren ? (
@@ -337,7 +337,7 @@ function FolderRow({
       </div>
 
       {expanded && hasChildren && (
-        <ul className="space-y-px">
+        <ul>
           {childNodes.map((child) => (
             <FolderRow
               key={child.id}
